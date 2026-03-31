@@ -35,7 +35,8 @@ public class SensorProducerRunner implements ApplicationRunner {
                 {"name": "location", "type": "string"},
                 {"name": "temperature", "type": "double"},
                 {"name": "humidity", "type": "double"},
-                {"name": "timestamp", "type": "long"}
+                {"name": "timestamp", "type": "long"},
+                {"name": "batteryLevel", "type": "double", "default": 100.0}
               ]
             }
             """;
@@ -124,6 +125,7 @@ public class SensorProducerRunner implements ApplicationRunner {
                 record.put("temperature", 18.0 + random.nextDouble() * 15.0);
                 record.put("humidity", 30.0 + random.nextDouble() * 50.0);
                 record.put("timestamp", Instant.now().toEpochMilli());
+                record.put("batteryLevel", 50.0 + random.nextDouble() * 50.0);
 
                 // Use sensorId as key — ensures all readings for the same sensor go to the same partition
                 String key = SENSOR_IDS[idx];
