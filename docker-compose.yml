@@ -3,16 +3,14 @@ services:
   kafka-primary:
     image: apache/kafka:4.0.0
     container_name: kafka-primary
-    ports:
-      - "29092:29092"
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-primary:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: SSL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: SSL://kafka-primary:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,SSL:SSL
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: SSL
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-primary:9093
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
@@ -20,10 +18,19 @@ services:
       KAFKA_DEFAULT_REPLICATION_FACTOR: 1
       KAFKA_MIN_IN_SYNC_REPLICAS: 1
       KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_SSL_KEYSTORE_FILENAME: kafka-primary.keystore.p12
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: ssl-credentials
+      KAFKA_SSL_KEY_CREDENTIALS: ssl-credentials
+      KAFKA_SSL_KEYSTORE_TYPE: PKCS12
+      KAFKA_SSL_TRUSTSTORE_FILENAME: truststore.p12
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: ssl-credentials
+      KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
+      KAFKA_SSL_CLIENT_AUTH: required
     volumes:
       - kafka-primary-data:/var/lib/kafka/data
+      - ./certs:/etc/kafka/secrets:ro
     healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      test: ["CMD-SHELL", "printf 'security.protocol=SSL\nssl.keystore.location=/etc/kafka/secrets/kafka-primary.keystore.p12\nssl.keystore.password=changeit\nssl.key.password=changeit\nssl.keystore.type=PKCS12\nssl.truststore.location=/etc/kafka/secrets/truststore.p12\nssl.truststore.password=changeit\nssl.truststore.type=PKCS12' > /tmp/ssl.properties && /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 --command-config /tmp/ssl.properties > /dev/null 2>&1"]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -35,16 +42,14 @@ services:
   kafka-secondary:
     image: apache/kafka:4.0.0
     container_name: kafka-secondary
-    ports:
-      - "29093:29092"
     environment:
       KAFKA_NODE_ID: 2
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-secondary:9092,PLAINTEXT_HOST://localhost:29093
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: SSL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: SSL://kafka-secondary:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,SSL:SSL
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: SSL
       KAFKA_CONTROLLER_QUORUM_VOTERS: 2@kafka-secondary:9093
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
@@ -52,10 +57,19 @@ services:
       KAFKA_DEFAULT_REPLICATION_FACTOR: 1
       KAFKA_MIN_IN_SYNC_REPLICAS: 1
       KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_SSL_KEYSTORE_FILENAME: kafka-secondary.keystore.p12
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: ssl-credentials
+      KAFKA_SSL_KEY_CREDENTIALS: ssl-credentials
+      KAFKA_SSL_KEYSTORE_TYPE: PKCS12
+      KAFKA_SSL_TRUSTSTORE_FILENAME: truststore.p12
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: ssl-credentials
+      KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
+      KAFKA_SSL_CLIENT_AUTH: required
     volumes:
       - kafka-secondary-data:/var/lib/kafka/data
+      - ./certs:/etc/kafka/secrets:ro
     healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      test: ["CMD-SHELL", "printf 'security.protocol=SSL\nssl.keystore.location=/etc/kafka/secrets/kafka-secondary.keystore.p12\nssl.keystore.password=changeit\nssl.key.password=changeit\nssl.keystore.type=PKCS12\nssl.truststore.location=/etc/kafka/secrets/truststore.p12\nssl.truststore.password=changeit\nssl.truststore.type=PKCS12' > /tmp/ssl.properties && /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 --command-config /tmp/ssl.properties > /dev/null 2>&1"]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -64,27 +78,34 @@ services:
       - kafka-net
     restart: unless-stopped
 
-  schema-registry:
-    build: ./kafka-schema-registry
-    container_name: schema-registry
-    ports:
-      - "8081:8081"
+  # Schema Registry backend (HTTP only, not exposed to clients directly)
+  schema-registry-backend:
+    image: confluentinc/cp-schema-registry:7.9.0
+    container_name: schema-registry-backend
     environment:
-      SERVER_PORT: 8081
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry-backend
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka-primary:9092
       SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
       SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 1
-      SCHEMA_REGISTRY_COMPATIBILITY_LEVEL: BACKWARD
+      SCHEMA_REGISTRY_SCHEMA_COMPATIBILITY_LEVEL: BACKWARD
       SCHEMA_REGISTRY_MODE: READWRITE
-      SCHEMA_REGISTRY_HOST: schema-registry
       SCHEMA_REGISTRY_GROUP_ID: schema-registry-primary
-      SCHEMA_REGISTRY_AUTH_USERNAME: admin
-      SCHEMA_REGISTRY_AUTH_PASSWORD: admin
+      SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL: SSL
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/schema-registry.keystore.p12
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_PASSWORD: changeit
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_KEY_PASSWORD: changeit
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_TYPE: PKCS12
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/truststore.p12
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_PASSWORD: changeit
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_TYPE: PKCS12
+    volumes:
+      - ./certs:/etc/kafka/secrets:ro
     depends_on:
       kafka-primary:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- --header='Authorization: Basic YWRtaW46YWRtaW4=' http://localhost:8081/subjects || exit 1"]
+      test: ["CMD-SHELL", "curl -s http://localhost:8081/subjects || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -93,33 +114,84 @@ services:
       - kafka-net
     restart: unless-stopped
 
-  schema-registry-secondary:
-    build: ./kafka-schema-registry
-    container_name: schema-registry-secondary
+  # nginx proxy: HTTPS + mTLS termination, blocks PUT/DELETE
+  schema-registry:
+    image: nginx:alpine
+    container_name: schema-registry
     ports:
-      - "8082:8082"
+      - "8081:8081"
+    volumes:
+      - ./config/nginx-schema-registry.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      schema-registry-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8084/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+    networks:
+      - kafka-net
+    restart: unless-stopped
+
+  # Schema Registry Secondary backend (HTTP only)
+  schema-registry-secondary-backend:
+    image: confluentinc/cp-schema-registry:7.9.0
+    container_name: schema-registry-secondary-backend
     environment:
-      SERVER_PORT: 8082
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry-secondary-backend
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8082
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka-secondary:9092
       SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
       SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 1
-      SCHEMA_REGISTRY_COMPATIBILITY_LEVEL: BACKWARD
+      SCHEMA_REGISTRY_SCHEMA_COMPATIBILITY_LEVEL: BACKWARD
       SCHEMA_REGISTRY_MODE: READONLY
-      SCHEMA_REGISTRY_HOST: schema-registry-secondary
       SCHEMA_REGISTRY_GROUP_ID: schema-registry-secondary
-      SCHEMA_REGISTRY_AUTH_USERNAME: admin
-      SCHEMA_REGISTRY_AUTH_PASSWORD: admin
+      SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL: SSL
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/schema-registry-secondary.keystore.p12
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_PASSWORD: changeit
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_KEY_PASSWORD: changeit
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_TYPE: PKCS12
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/truststore.p12
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_PASSWORD: changeit
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_TYPE: PKCS12
+    volumes:
+      - ./certs:/etc/kafka/secrets:ro
     depends_on:
       kafka-secondary:
         condition: service_healthy
       mirrormaker2:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- --header='Authorization: Basic YWRtaW46YWRtaW4=' http://localhost:8082/subjects || exit 1"]
+      test: ["CMD-SHELL", "curl -s http://localhost:8082/subjects || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 10
       start_period: 45s
+    networks:
+      - kafka-net
+    restart: unless-stopped
+
+  # nginx proxy: HTTPS + mTLS termination, blocks PUT/DELETE
+  schema-registry-secondary:
+    image: nginx:alpine
+    container_name: schema-registry-secondary
+    ports:
+      - "8082:8082"
+    volumes:
+      - ./config/nginx-schema-registry-secondary.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      schema-registry-secondary-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8084/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
     networks:
       - kafka-net
     restart: unless-stopped
@@ -130,6 +202,7 @@ services:
     command: /opt/kafka/bin/connect-mirror-maker.sh /etc/kafka/mm2.properties
     volumes:
       - ./config/mm2.properties:/etc/kafka/mm2.properties:ro
+      - ./certs:/etc/kafka/secrets:ro
     depends_on:
       kafka-primary:
         condition: service_healthy
@@ -151,13 +224,26 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
+        cat > /tmp/client-ssl.properties <<PROPS
+        security.protocol=SSL
+        ssl.keystore.location=/etc/kafka/secrets/init-topics.keystore.p12
+        ssl.keystore.password=changeit
+        ssl.key.password=changeit
+        ssl.keystore.type=PKCS12
+        ssl.truststore.location=/etc/kafka/secrets/truststore.p12
+        ssl.truststore.password=changeit
+        ssl.truststore.type=PKCS12
+        PROPS
         echo "Creating topic sensor-readings with 3 partitions..."
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka-primary:9092 \
+          --command-config /tmp/client-ssl.properties \
           --create --if-not-exists \
           --topic sensor-readings \
           --partitions 3 \
           --replication-factor 1
         echo "Topic created."
+    volumes:
+      - ./certs:/etc/kafka/secrets:ro
     depends_on:
       kafka-primary:
         condition: service_healthy
@@ -169,8 +255,17 @@ services:
     container_name: kafka-producer
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka-primary:9092
-      SCHEMA_REGISTRY_URL: http://schema-registry:8081
-      SCHEMA_REGISTRY_USER_INFO: "admin:admin"
+      SCHEMA_REGISTRY_URL: https://schema-registry:8081
+      KAFKA_SECURITY_PROTOCOL: SSL
+      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka-producer.keystore.p12
+      KAFKA_SSL_KEYSTORE_PASSWORD: changeit
+      KAFKA_SSL_KEY_PASSWORD: changeit
+      KAFKA_SSL_KEYSTORE_TYPE: PKCS12
+      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/truststore.p12
+      KAFKA_SSL_TRUSTSTORE_PASSWORD: changeit
+      KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
+    volumes:
+      - ./certs:/etc/kafka/secrets:ro
     depends_on:
       init-topics:
         condition: service_completed_successfully
@@ -185,8 +280,17 @@ services:
     container_name: kafka-consumer
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka-primary:9092
-      SCHEMA_REGISTRY_URL: http://schema-registry:8081
-      SCHEMA_REGISTRY_USER_INFO: "admin:admin"
+      SCHEMA_REGISTRY_URL: https://schema-registry:8081
+      KAFKA_SECURITY_PROTOCOL: SSL
+      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka-consumer.keystore.p12
+      KAFKA_SSL_KEYSTORE_PASSWORD: changeit
+      KAFKA_SSL_KEY_PASSWORD: changeit
+      KAFKA_SSL_KEYSTORE_TYPE: PKCS12
+      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/truststore.p12
+      KAFKA_SSL_TRUSTSTORE_PASSWORD: changeit
+      KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
+    volumes:
+      - ./certs:/etc/kafka/secrets:ro
     depends_on:
       init-topics:
         condition: service_completed_successfully
@@ -204,15 +308,29 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: primary
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-primary:9092
-      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
-      KAFKA_CLUSTERS_0_SCHEMAREGISTRYAUTH_USERNAME: admin
-      KAFKA_CLUSTERS_0_SCHEMAREGISTRYAUTH_PASSWORD: admin
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry-backend:8081
+      KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: SSL
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka-ui.keystore.p12
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEYSTORE_PASSWORD: changeit
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEY_PASSWORD: changeit
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEYSTORE_TYPE: PKCS12
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/truststore.p12
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_PASSWORD: changeit
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_TYPE: PKCS12
       KAFKA_CLUSTERS_1_NAME: secondary
       KAFKA_CLUSTERS_1_BOOTSTRAPSERVERS: kafka-secondary:9092
-      KAFKA_CLUSTERS_1_SCHEMAREGISTRY: http://schema-registry-secondary:8082
-      KAFKA_CLUSTERS_1_SCHEMAREGISTRYAUTH_USERNAME: admin
-      KAFKA_CLUSTERS_1_SCHEMAREGISTRYAUTH_PASSWORD: admin
+      KAFKA_CLUSTERS_1_SCHEMAREGISTRY: http://schema-registry-secondary-backend:8082
+      KAFKA_CLUSTERS_1_PROPERTIES_SECURITY_PROTOCOL: SSL
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka-ui.keystore.p12
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEYSTORE_PASSWORD: changeit
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEY_PASSWORD: changeit
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEYSTORE_TYPE: PKCS12
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/truststore.p12
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_TRUSTSTORE_PASSWORD: changeit
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_TRUSTSTORE_TYPE: PKCS12
       DYNAMIC_CONFIG_ENABLED: "true"
+    volumes:
+      - ./certs:/etc/kafka/secrets:ro
     depends_on:
       kafka-primary:
         condition: service_healthy

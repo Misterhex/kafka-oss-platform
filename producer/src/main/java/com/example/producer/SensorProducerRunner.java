@@ -35,7 +35,8 @@ public class SensorProducerRunner implements ApplicationRunner {
                 {"name": "location", "type": "string"},
                 {"name": "temperature", "type": "double"},
                 {"name": "humidity", "type": "double"},
-                {"name": "timestamp", "type": "long"}
+                {"name": "timestamp", "type": "long"},
+                {"name": "batteryLevel", "type": "double", "default": 100.0}
               ]
             }
             """;
@@ -50,8 +51,29 @@ public class SensorProducerRunner implements ApplicationRunner {
     @Value("${kafka.schema-registry-url}")
     private String schemaRegistryUrl;
 
-    @Value("${kafka.schema-registry-user-info:}")
-    private String schemaRegistryUserInfo;
+    @Value("${kafka.security-protocol}")
+    private String securityProtocol;
+
+    @Value("${kafka.ssl.keystore-location:}")
+    private String sslKeystoreLocation;
+
+    @Value("${kafka.ssl.keystore-password:}")
+    private String sslKeystorePassword;
+
+    @Value("${kafka.ssl.key-password:}")
+    private String sslKeyPassword;
+
+    @Value("${kafka.ssl.keystore-type:PKCS12}")
+    private String sslKeystoreType;
+
+    @Value("${kafka.ssl.truststore-location:}")
+    private String sslTruststoreLocation;
+
+    @Value("${kafka.ssl.truststore-password:}")
+    private String sslTruststorePassword;
+
+    @Value("${kafka.ssl.truststore-type:PKCS12}")
+    private String sslTruststoreType;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
@@ -63,14 +85,33 @@ public class SensorProducerRunner implements ApplicationRunner {
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
         props.put(KafkaAvroSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
-        props.put("basic.auth.credentials.source", "USER_INFO");
-        props.put("basic.auth.user.info", schemaRegistryUserInfo);
+
+        if (schemaRegistryUrl.startsWith("https://")) {
+            props.put("schema.registry.ssl.keystore.location", sslKeystoreLocation);
+            props.put("schema.registry.ssl.keystore.password", sslKeystorePassword);
+            props.put("schema.registry.ssl.key.password", sslKeyPassword);
+            props.put("schema.registry.ssl.keystore.type", sslKeystoreType);
+            props.put("schema.registry.ssl.truststore.location", sslTruststoreLocation);
+            props.put("schema.registry.ssl.truststore.password", sslTruststorePassword);
+            props.put("schema.registry.ssl.truststore.type", sslTruststoreType);
+        }
 
         // Idempotent producer — ensures exactly-once delivery semantics
         // In Kafka 3.x+ this is the default, but setting explicitly for clarity.
         // enable.idempotence=true implies acks=all, retries=Integer.MAX_VALUE, max.in.flight.requests.per.connection<=5
         props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
         props.put(ProducerConfig.ACKS_CONFIG, "all");
+
+        props.put("security.protocol", securityProtocol);
+        if ("SSL".equals(securityProtocol)) {
+            props.put("ssl.keystore.location", sslKeystoreLocation);
+            props.put("ssl.keystore.password", sslKeystorePassword);
+            props.put("ssl.key.password", sslKeyPassword);
+            props.put("ssl.keystore.type", sslKeystoreType);
+            props.put("ssl.truststore.location", sslTruststoreLocation);
+            props.put("ssl.truststore.password", sslTruststorePassword);
+            props.put("ssl.truststore.type", sslTruststoreType);
+        }
 
         try (KafkaProducer<String, GenericRecord> producer = new KafkaProducer<>(props)) {
             log.info("Producer started. Sending to topic '{}' every 3 seconds...", TOPIC);
@@ -84,6 +125,7 @@ public class SensorProducerRunner implements ApplicationRunner {
                 record.put("temperature", 18.0 + random.nextDouble() * 15.0);
                 record.put("humidity", 30.0 + random.nextDouble() * 50.0);
                 record.put("timestamp", Instant.now().toEpochMilli());
+                record.put("batteryLevel", 50.0 + random.nextDouble() * 50.0);
 
                 // Use sensorId as key — ensures all readings for the same sensor go to the same partition
                 String key = SENSOR_IDS[idx];
