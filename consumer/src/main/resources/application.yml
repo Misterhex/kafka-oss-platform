@@ -1,4 +1,12 @@
 kafka:
   bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
   schema-registry-url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
-  schema-registry-user-info: ${SCHEMA_REGISTRY_USER_INFO:}
+  security-protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+  ssl:
+    keystore-location: ${KAFKA_SSL_KEYSTORE_LOCATION:}
+    keystore-password: ${KAFKA_SSL_KEYSTORE_PASSWORD:}
+    key-password: ${KAFKA_SSL_KEY_PASSWORD:}
+    keystore-type: ${KAFKA_SSL_KEYSTORE_TYPE:PKCS12}
+    truststore-location: ${KAFKA_SSL_TRUSTSTORE_LOCATION:}
+    truststore-password: ${KAFKA_SSL_TRUSTSTORE_PASSWORD:}
+    truststore-type: ${KAFKA_SSL_TRUSTSTORE_TYPE:PKCS12}
