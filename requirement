@@ -1,0 +1,20 @@
+Use docker compose and create the followings:
+
+Build 2 kafka 4.x apache kafka cluster; primary and secondary, using 1 kafka instance each, they run as controller+broker, properly configure advertised listener, set default replication factor=1 so it can run single node.
+
+For primary cluster, run a single node opensource confluent schema registry connecting to it. expose schema registry so i can acess it in browser.
+
+Run mirrormaker2, replicate all topics including internal topics from active to passive cluster, mirrormaker should also sync and commit consumer offset, mirrormaker should use identical topic name.
+
+Run kafka ui dashboard, and configure to both cluster so i can view. expose kafka ui.
+
+
+Build a kafka producer app in spring boot 3, java 21. Don't use spring kafka. just use ApplicationRunner and kafka libs. Producer kept producing random data with a few fields to illustrate schema and to a 3 parition topic on interval, use record keys, use confluent avro serializer and schema registry to showcase the e2e flow, also show the best practice configurations like enable.idempotence? keep config as minimal as possible. 
+
+Then build a kafka consumer app similarly in spring boot 3, java 21, also don't use spring kafka, use ApplicationRunner and kafka libs. Consumer consume data, and use the schema registry to deserialize the data. 
+
+App tech stack must be using spring boot 3, java 21, don't use spring kafka, use gradle groovy for build.gradle.
+
+Build the 2 app in ./producer and ./consumer and deploy the 2 app as part of docker-compose. 
+
+Validate the e2e flow is working, check logs and ensure.

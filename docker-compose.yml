@@ -1,0 +1,241 @@
+services:
+
+  kafka-primary:
+    image: apache/kafka:4.0.0
+    container_name: kafka-primary
+    ports:
+      - "29092:29092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-primary:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-primary:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_MIN_IN_SYNC_REPLICAS: 1
+      KAFKA_LOG_RETENTION_HOURS: 168
+    volumes:
+      - kafka-primary-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - kafka-net
+    restart: unless-stopped
+
+  kafka-secondary:
+    image: apache/kafka:4.0.0
+    container_name: kafka-secondary
+    ports:
+      - "29093:29092"
+    environment:
+      KAFKA_NODE_ID: 2
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-secondary:9092,PLAINTEXT_HOST://localhost:29093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 2@kafka-secondary:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_MIN_IN_SYNC_REPLICAS: 1
+      KAFKA_LOG_RETENTION_HOURS: 168
+    volumes:
+      - kafka-secondary-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - kafka-net
+    restart: unless-stopped
+
+  schema-registry:
+    build: ./kafka-schema-registry
+    container_name: schema-registry
+    ports:
+      - "8081:8081"
+    environment:
+      SERVER_PORT: 8081
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka-primary:9092
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 1
+      SCHEMA_REGISTRY_COMPATIBILITY_LEVEL: BACKWARD
+      SCHEMA_REGISTRY_MODE: READWRITE
+      SCHEMA_REGISTRY_HOST: schema-registry
+      SCHEMA_REGISTRY_GROUP_ID: schema-registry-primary
+      SCHEMA_REGISTRY_AUTH_USERNAME: admin
+      SCHEMA_REGISTRY_AUTH_PASSWORD: admin
+    depends_on:
+      kafka-primary:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- --header='Authorization: Basic YWRtaW46YWRtaW4=' http://localhost:8081/subjects || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - kafka-net
+    restart: unless-stopped
+
+  schema-registry-secondary:
+    build: ./kafka-schema-registry
+    container_name: schema-registry-secondary
+    ports:
+      - "8082:8082"
+    environment:
+      SERVER_PORT: 8082
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka-secondary:9092
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 1
+      SCHEMA_REGISTRY_COMPATIBILITY_LEVEL: BACKWARD
+      SCHEMA_REGISTRY_MODE: READONLY
+      SCHEMA_REGISTRY_HOST: schema-registry-secondary
+      SCHEMA_REGISTRY_GROUP_ID: schema-registry-secondary
+      SCHEMA_REGISTRY_AUTH_USERNAME: admin
+      SCHEMA_REGISTRY_AUTH_PASSWORD: admin
+    depends_on:
+      kafka-secondary:
+        condition: service_healthy
+      mirrormaker2:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- --header='Authorization: Basic YWRtaW46YWRtaW4=' http://localhost:8082/subjects || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 45s
+    networks:
+      - kafka-net
+    restart: unless-stopped
+
+  mirrormaker2:
+    image: apache/kafka:4.0.0
+    container_name: mirrormaker2
+    command: /opt/kafka/bin/connect-mirror-maker.sh /etc/kafka/mm2.properties
+    volumes:
+      - ./config/mm2.properties:/etc/kafka/mm2.properties:ro
+    depends_on:
+      kafka-primary:
+        condition: service_healthy
+      kafka-secondary:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep MirrorMaker | grep -v grep || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - kafka-net
+    restart: unless-stopped
+
+  init-topics:
+    image: apache/kafka:4.0.0
+    container_name: init-topics
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Creating topic sensor-readings with 3 partitions..."
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka-primary:9092 \
+          --create --if-not-exists \
+          --topic sensor-readings \
+          --partitions 3 \
+          --replication-factor 1
+        echo "Topic created."
+    depends_on:
+      kafka-primary:
+        condition: service_healthy
+    networks:
+      - kafka-net
+
+  kafka-producer:
+    build: ./producer
+    container_name: kafka-producer
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka-primary:9092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      SCHEMA_REGISTRY_USER_INFO: "admin:admin"
+    depends_on:
+      init-topics:
+        condition: service_completed_successfully
+      schema-registry:
+        condition: service_healthy
+    networks:
+      - kafka-net
+    restart: unless-stopped
+
+  kafka-consumer:
+    build: ./consumer
+    container_name: kafka-consumer
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka-primary:9092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      SCHEMA_REGISTRY_USER_INFO: "admin:admin"
+    depends_on:
+      init-topics:
+        condition: service_completed_successfully
+      schema-registry:
+        condition: service_healthy
+    networks:
+      - kafka-net
+    restart: unless-stopped
+
+  kafka-ui:
+    image: ghcr.io/kafbat/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: primary
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-primary:9092
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRYAUTH_USERNAME: admin
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRYAUTH_PASSWORD: admin
+      KAFKA_CLUSTERS_1_NAME: secondary
+      KAFKA_CLUSTERS_1_BOOTSTRAPSERVERS: kafka-secondary:9092
+      KAFKA_CLUSTERS_1_SCHEMAREGISTRY: http://schema-registry-secondary:8082
+      KAFKA_CLUSTERS_1_SCHEMAREGISTRYAUTH_USERNAME: admin
+      KAFKA_CLUSTERS_1_SCHEMAREGISTRYAUTH_PASSWORD: admin
+      DYNAMIC_CONFIG_ENABLED: "true"
+    depends_on:
+      kafka-primary:
+        condition: service_healthy
+      kafka-secondary:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+      schema-registry-secondary:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - kafka-net
+    restart: unless-stopped
+
+volumes:
+  kafka-primary-data:
+  kafka-secondary-data:
+
+networks:
+  kafka-net:
+    driver: bridge
