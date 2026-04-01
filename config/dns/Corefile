@@ -1,0 +1,10 @@
+internal {
+    file /etc/coredns/db.internal
+    reload 2s
+    log
+}
+
+. {
+    forward . 127.0.0.11
+    log
+}

@@ -96,7 +96,7 @@ generate_cert() {
 echo ""
 echo "--- Generating broker certificates ---"
 for broker in "${BROKERS[@]}"; do
-  generate_cert "$broker" "DNS:${broker},DNS:localhost"
+  generate_cert "$broker" "DNS:${broker},DNS:localhost,DNS:kafka.internal"
 done
 
 # -----------------------------------------------
@@ -105,7 +105,11 @@ done
 echo ""
 echo "--- Generating client certificates ---"
 for client in "${CLIENTS[@]}"; do
-  generate_cert "$client" "DNS:${client}"
+  san="DNS:${client}"
+  if [[ "$client" == "schema-registry" || "$client" == "schema-registry-secondary" ]]; then
+    san="DNS:${client},DNS:schema-registry.internal"
+  fi
+  generate_cert "$client" "$san"
 done
 
 # -----------------------------------------------

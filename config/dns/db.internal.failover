@@ -1,0 +1,13 @@
+$ORIGIN internal.
+@       IN SOA  ns.internal. admin.internal. (
+                2           ; serial (incremented to trigger CoreDNS reload)
+                3600        ; refresh
+                600         ; retry
+                86400       ; expire
+                60          ; minimum TTL
+        )
+        IN NS   ns.internal.
+
+ns                  IN A    172.20.0.2
+kafka               IN A    172.20.0.11
+schema-registry     IN A    172.20.0.21
