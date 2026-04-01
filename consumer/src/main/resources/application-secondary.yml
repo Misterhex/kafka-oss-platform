@@ -1,3 +1,0 @@
-kafka:
-  bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka-secondary:9092}
-  schema-registry-url: ${SCHEMA_REGISTRY_URL:https://schema-registry-secondary:8082}

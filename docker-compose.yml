@@ -7,7 +7,7 @@ services:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: SSL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: SSL://kafka-primary:9092
+      KAFKA_ADVERTISED_LISTENERS: SSL://kafka.internal:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,SSL:SSL
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_INTER_BROKER_LISTENER_NAME: SSL
@@ -36,7 +36,8 @@ services:
       retries: 10
       start_period: 30s
     networks:
-      - kafka-net
+      kafka-net:
+        ipv4_address: 172.20.0.10
     restart: unless-stopped
 
   kafka-secondary:
@@ -46,7 +47,7 @@ services:
       KAFKA_NODE_ID: 2
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: SSL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: SSL://kafka-secondary:9092
+      KAFKA_ADVERTISED_LISTENERS: SSL://kafka.internal:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,SSL:SSL
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_INTER_BROKER_LISTENER_NAME: SSL
@@ -75,13 +76,16 @@ services:
       retries: 10
       start_period: 30s
     networks:
-      - kafka-net
+      kafka-net:
+        ipv4_address: 172.20.0.11
     restart: unless-stopped
 
   # Schema Registry backend (HTTP only, not exposed to clients directly)
   schema-registry-backend:
     image: confluentinc/cp-schema-registry:7.9.0
     container_name: schema-registry-backend
+    extra_hosts:
+      - "kafka.internal:172.20.0.10"
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry-backend
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
@@ -133,13 +137,16 @@ services:
       retries: 10
       start_period: 10s
     networks:
-      - kafka-net
+      kafka-net:
+        ipv4_address: 172.20.0.20
     restart: unless-stopped
 
   # Schema Registry Secondary backend (HTTP only)
   schema-registry-secondary-backend:
     image: confluentinc/cp-schema-registry:7.9.0
     container_name: schema-registry-secondary-backend
+    extra_hosts:
+      - "kafka.internal:172.20.0.11"
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry-secondary-backend
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8082
@@ -175,11 +182,12 @@ services:
     restart: unless-stopped
 
   # nginx proxy: HTTPS + mTLS termination, blocks PUT/DELETE
+  # Listens on 8081 internally (for DNS failover via schema-registry.internal:8081), exposed as 8082 on host
   schema-registry-secondary:
     image: nginx:alpine
     container_name: schema-registry-secondary
     ports:
-      - "8082:8082"
+      - "8082:8081"
     volumes:
       - ./config/nginx-schema-registry-secondary.conf:/etc/nginx/nginx.conf:ro
       - ./certs:/etc/nginx/certs:ro
@@ -193,12 +201,26 @@ services:
       retries: 10
       start_period: 10s
     networks:
-      - kafka-net
+      kafka-net:
+        ipv4_address: 172.20.0.21
+    restart: unless-stopped
+
+  coredns:
+    image: coredns/coredns:1.12.0
+    container_name: coredns
+    command: -conf /etc/coredns/Corefile
+    volumes:
+      - ./config/dns:/etc/coredns:rw
+    networks:
+      kafka-net:
+        ipv4_address: 172.20.0.2
     restart: unless-stopped
 
   mirrormaker2:
     image: apache/kafka:4.0.0
     container_name: mirrormaker2
+    extra_hosts:
+      - "kafka.internal:172.20.0.10"
     command: /opt/kafka/bin/connect-mirror-maker.sh /etc/kafka/mm2.properties
     volumes:
       - ./config/mm2.properties:/etc/kafka/mm2.properties:ro
@@ -221,6 +243,8 @@ services:
   init-topics:
     image: apache/kafka:4.0.0
     container_name: init-topics
+    extra_hosts:
+      - "kafka.internal:172.20.0.10"
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
@@ -254,8 +278,8 @@ services:
     build: ./producer
     container_name: kafka-producer
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka-primary:9092
-      SCHEMA_REGISTRY_URL: https://schema-registry:8081
+      KAFKA_BOOTSTRAP_SERVERS: kafka.internal:9092
+      SCHEMA_REGISTRY_URL: https://schema-registry.internal:8081
       KAFKA_SECURITY_PROTOCOL: SSL
       KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka-producer.keystore.p12
       KAFKA_SSL_KEYSTORE_PASSWORD: changeit
@@ -264,13 +288,18 @@ services:
       KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/truststore.p12
       KAFKA_SSL_TRUSTSTORE_PASSWORD: changeit
       KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
+      JAVA_TOOL_OPTIONS: "-Dnetworkaddress.cache.ttl=5"
     volumes:
       - ./certs:/etc/kafka/secrets:ro
+    dns:
+      - 172.20.0.2
     depends_on:
       init-topics:
         condition: service_completed_successfully
       schema-registry:
         condition: service_healthy
+      coredns:
+        condition: service_started
     networks:
       - kafka-net
     restart: unless-stopped
@@ -279,8 +308,8 @@ services:
     build: ./consumer
     container_name: kafka-consumer
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka-primary:9092
-      SCHEMA_REGISTRY_URL: https://schema-registry:8081
+      KAFKA_BOOTSTRAP_SERVERS: kafka.internal:9092
+      SCHEMA_REGISTRY_URL: https://schema-registry.internal:8081
       KAFKA_SECURITY_PROTOCOL: SSL
       KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka-consumer.keystore.p12
       KAFKA_SSL_KEYSTORE_PASSWORD: changeit
@@ -289,13 +318,18 @@ services:
       KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/truststore.p12
       KAFKA_SSL_TRUSTSTORE_PASSWORD: changeit
       KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
+      JAVA_TOOL_OPTIONS: "-Dnetworkaddress.cache.ttl=5"
     volumes:
       - ./certs:/etc/kafka/secrets:ro
+    dns:
+      - 172.20.0.2
     depends_on:
       init-topics:
         condition: service_completed_successfully
       schema-registry:
         condition: service_healthy
+      coredns:
+        condition: service_started
     networks:
       - kafka-net
     restart: unless-stopped
@@ -303,6 +337,8 @@ services:
   kafka-ui:
     image: ghcr.io/kafbat/kafka-ui:latest
     container_name: kafka-ui
+    extra_hosts:
+      - "kafka.internal:172.20.0.10"
     ports:
       - "8080:8080"
     environment:
@@ -357,3 +393,6 @@ volumes:
 networks:
   kafka-net:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
