@@ -4,6 +4,8 @@
 
 This document covers the failover and restore procedures for the dual-cluster Kafka setup. The architecture is **active-passive** with one-way replication (primary to secondary) via MirrorMaker 2.
 
+Failover is implemented as a **DNS flip** using CoreDNS. Applications connect to virtual hostnames (`kafka.internal`, `schema-registry.internal`) which CoreDNS resolves to either the primary or secondary cluster. Switching clusters requires no application restarts -- only a zone file swap.
+
 ### Key design constraints
 
 - **MirrorMaker 2** replicates one-way: `primary -> secondary` only.
@@ -14,24 +16,32 @@ This document covers the failover and restore procedures for the dual-cluster Ka
 ### Architecture during normal operation
 
 ```
-Producer --> kafka-primary --> MirrorMaker 2 --> kafka-secondary
-                |                                      |
-         schema-registry                  schema-registry-secondary
-           (READWRITE)                       (READ-ONLY via nginx)
-                |                                      |
-Consumer <-- kafka-primary                       (standby)
+                          CoreDNS
+                     kafka.internal -> 172.20.0.10 (kafka-primary)
+              schema-registry.internal -> 172.20.0.20 (schema-registry)
+
+Producer --> kafka.internal:9092 --> kafka-primary --> MirrorMaker 2 --> kafka-secondary
+                                         |                                    |
+                              schema-registry.internal            schema-registry-secondary
+                                    (READWRITE)                      (READ-ONLY via nginx)
+                                         |
+Consumer <-- kafka.internal:9092 <-- kafka-primary
 ```
 
 ### Architecture during failover
 
 ```
-         kafka-primary          MirrorMaker 2 (still running)          kafka-secondary
-           (down or                                                         |
-          unavailable)                                            schema-registry-secondary
-                                                                     (READ-ONLY via nginx)
-                                                                           |
-                                                              Producer --> kafka-secondary
-                                                              Consumer <-- kafka-secondary
+                          CoreDNS
+                     kafka.internal -> 172.20.0.11 (kafka-secondary)
+              schema-registry.internal -> 172.20.0.21 (schema-registry-secondary)
+
+         kafka-primary                                          kafka-secondary
+           (down or                                                  |
+          unavailable)                                   schema-registry-secondary
+                                                            (READ-ONLY via nginx)
+                                                                     |
+                                               Producer --> kafka.internal:9092
+                                               Consumer <-- kafka.internal:9092
 ```
 
 ## Failover: Primary to Secondary
@@ -60,30 +70,29 @@ Before failover, verify:
 
 ### Procedure
 
-Run the failover script:
+Run the DNS failover script:
 
 ```bash
-./scripts/simulate-failover.sh
+./scripts/dns-failover.sh secondary
 ```
 
-Or manually:
+This swaps the CoreDNS zone file so that:
+- `kafka.internal` resolves to `172.20.0.11` (kafka-secondary)
+- `schema-registry.internal` resolves to `172.20.0.21` (schema-registry-secondary)
+
+CoreDNS auto-reloads within 2 seconds. No container restarts are needed.
+
+Check the current DNS target at any time:
 
 ```bash
-# 1. Stop producer and consumer
-docker compose stop kafka-producer kafka-consumer
-
-# 2. Restart with secondary profile
-docker compose -f docker-compose.yml -f docker-compose.failover.yml \
-  up -d kafka-producer kafka-consumer
-
-# 3. Verify they are producing/consuming on secondary
-docker compose logs -f kafka-producer kafka-consumer
+./scripts/dns-failover.sh status
 ```
 
 ### What happens during failover
 
-- Producer and consumer connect to `kafka-secondary:9092` and `schema-registry-secondary:8082`.
-- The `SPRING_PROFILES_ACTIVE=secondary` profile activates, overriding bootstrap servers and schema registry URL.
+- CoreDNS zone file is swapped. The serial number increments, triggering CoreDNS to reload within 2 seconds.
+- The JVM DNS cache TTL is set to 5 seconds (`-Dnetworkaddress.cache.ttl=5`), so applications re-resolve hostnames quickly.
+- Kafka clients detect broken connections to the old broker and reconnect. The bootstrap address `kafka.internal:9092` now resolves to `kafka-secondary`, and the advertised listener (`SSL://kafka.internal:9092`) matches, so metadata responses route clients correctly.
 - Consumer offsets on secondary were synced by MM2's checkpoint connector (sync interval: 60s). The consumer resumes from approximately where it left off.
 - **Schema registration is blocked.** If the producer attempts to register a new or modified schema, it will fail with HTTP 403. Only schemas that already exist on the secondary (replicated from primary) can be used.
 
@@ -133,52 +142,31 @@ Before restoring, verify:
 
 ### Procedure
 
-#### Phase 1: Drain secondary
-
-Stop the producer first so no new messages are written to secondary:
+Flip DNS back to primary:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.failover.yml \
-  stop kafka-producer
+./scripts/dns-failover.sh primary
 ```
 
-Wait for the consumer to drain remaining messages (check that lag reaches 0):
+This swaps the CoreDNS zone file so that:
+- `kafka.internal` resolves to `172.20.0.10` (kafka-primary)
+- `schema-registry.internal` resolves to `172.20.0.20` (schema-registry)
+
+Applications reconnect to the primary cluster automatically. No container restarts are needed.
+
+### Verify
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.failover.yml \
-  logs -f kafka-consumer
-```
+# Check current DNS target
+./scripts/dns-failover.sh status
 
-Once the consumer shows no new messages being consumed, stop it:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.failover.yml \
-  stop kafka-consumer
-```
-
-#### Phase 2: Restart on primary
-
-Restart producer and consumer using the base compose file (no failover overlay):
-
-```bash
-docker compose up -d kafka-producer kafka-consumer
-```
-
-This restores the default configuration:
-- `KAFKA_BOOTSTRAP_SERVERS=kafka-primary:9092`
-- `SCHEMA_REGISTRY_URL=https://schema-registry:8081`
-- No `SPRING_PROFILES_ACTIVE` override (default profile)
-
-#### Phase 3: Verify
-
-```bash
 # Check producer is sending to primary
 docker compose logs --tail 10 kafka-producer
 
 # Check consumer is reading from primary
 docker compose logs --tail 10 kafka-consumer
 
-# Verify schema registry is writable (test with a dry-run)
+# Verify schema registry is writable
 docker compose exec schema-registry-backend \
   curl -s http://localhost:8081/subjects
 ```
@@ -186,15 +174,12 @@ docker compose exec schema-registry-backend \
 ### Restore sequence summary
 
 ```
-1. Stop producer on secondary     (no new messages to secondary)
-2. Drain consumer on secondary    (process remaining messages)
-3. Stop consumer on secondary
-4. Start consumer on primary      (consumers first)
-5. Start producer on primary      (producers second)
-6. Verify end-to-end flow
+1. Verify primary cluster is healthy
+2. Run ./scripts/dns-failover.sh primary
+3. Verify producer/consumer reconnect to primary
 ```
 
-> **Consumers move first, producers second.** This ensures consumption infrastructure is ready before new messages arrive on primary.
+> With DNS failover, restore is symmetric to failover -- a single command flips the DNS zone back.
 
 ---
 
@@ -323,7 +308,7 @@ With DefaultReplicationPolicy and bidirectional MM2:
 
 For this setup, the tradeoffs favor IdentityReplicationPolicy:
 
-- **Failover is simple** -- apps point to the secondary cluster and everything works with zero topic name changes.
+- **Failover is simple** -- DNS flip redirects applications to the secondary cluster with zero topic name changes.
 - **Bidirectional replication is not needed** -- the secondary is designed as a temporary standby, not a permanent active site.
 - **Data loss during failover is accepted** -- messages produced to secondary during failover are consumed there but not replicated back to primary.
 
@@ -338,14 +323,50 @@ For this local dev/testing setup, active-passive with IdentityReplicationPolicy 
 
 ---
 
+## How the DNS Flip Works
+
+### Components
+
+- **CoreDNS** (`coredns/coredns:1.12.0`) serves the `.internal` zone from `/etc/coredns/db.internal`
+- Zone file auto-reload every 2 seconds
+- Non-`.internal` queries forwarded to Docker's embedded DNS (`127.0.0.11`)
+- Producer and consumer use `dns: [172.20.0.2]` to resolve via CoreDNS
+- Infrastructure containers use `extra_hosts` to resolve `kafka.internal` statically
+
+### Static IP assignments
+
+| Container | IP |
+|-----------|-----|
+| CoreDNS | 172.20.0.2 |
+| kafka-primary | 172.20.0.10 |
+| kafka-secondary | 172.20.0.11 |
+| schema-registry (nginx) | 172.20.0.20 |
+| schema-registry-secondary (nginx) | 172.20.0.21 |
+
+### Zone files
+
+| File | Purpose |
+|------|---------|
+| `config/dns/db.internal` | Active zone (CoreDNS reads this) |
+| `config/dns/db.internal.primary` | Primary zone (restore source) |
+| `config/dns/db.internal.failover` | Secondary zone (failover source) |
+
+### Why advertised listeners matter
+
+Both Kafka brokers advertise `SSL://kafka.internal:9092`. After initial bootstrap, Kafka clients use the advertised listener hostname for all subsequent connections. If the broker advertised its real hostname (e.g., `kafka-primary`), clients would bypass DNS and connect directly, defeating the DNS flip mechanism.
+
+---
+
 ## Quick Reference
 
 | Action | Command |
 |--------|---------|
-| Failover to secondary | `./scripts/simulate-failover.sh` |
-| Restore to primary | `docker compose stop kafka-producer kafka-consumer && docker compose up -d kafka-producer kafka-consumer` |
+| Failover to secondary | `./scripts/dns-failover.sh secondary` |
+| Restore to primary | `./scripts/dns-failover.sh primary` |
+| Check current DNS target | `./scripts/dns-failover.sh status` |
 | Check producer target | `docker compose logs --tail 5 kafka-producer \| grep "schema.registry.url"` |
 | Check consumer target | `docker compose logs --tail 5 kafka-consumer \| grep "bootstrap.servers"` |
 | Check MM2 health | `docker compose logs --tail 5 mirrormaker2` |
 | Check SR mode (primary) | `curl http://localhost:8081/mode` |
 | Check SR mode (secondary) | `curl http://localhost:8082/mode` |
+| Check CoreDNS logs | `docker compose logs coredns` |
