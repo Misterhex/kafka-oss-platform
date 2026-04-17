@@ -1,3 +1,23 @@
+server:
+  port: 8080
+
+spring:
+  main:
+    web-application-type: servlet
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+synthetic:
+  liveness:
+    staleness-threshold-seconds: ${SYNTHETIC_LIVENESS_STALENESS_SECONDS:30}
+
 kafka:
   bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
   schema-registry-url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}

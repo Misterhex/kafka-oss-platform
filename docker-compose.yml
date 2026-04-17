@@ -289,6 +289,8 @@ services:
       KAFKA_SSL_TRUSTSTORE_PASSWORD: changeit
       KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
       JAVA_TOOL_OPTIONS: "-Dnetworkaddress.cache.ttl=5"
+    ports:
+      - "8090:8080"
     volumes:
       - ./certs:/etc/kafka/secrets:ro
     dns:
@@ -300,6 +302,12 @@ services:
         condition: service_healthy
       coredns:
         condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - kafka-net
     restart: unless-stopped
@@ -319,6 +327,8 @@ services:
       KAFKA_SSL_TRUSTSTORE_PASSWORD: changeit
       KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
       JAVA_TOOL_OPTIONS: "-Dnetworkaddress.cache.ttl=5"
+    ports:
+      - "8091:8080"
     volumes:
       - ./certs:/etc/kafka/secrets:ro
     dns:
@@ -330,6 +340,12 @@ services:
         condition: service_healthy
       coredns:
         condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - kafka-net
     restart: unless-stopped

@@ -2,6 +2,8 @@ package com.example.producer;
 
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializerConfig;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
@@ -12,16 +14,16 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Properties;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Component
-public class SensorProducerRunner implements ApplicationRunner {
+public class SensorProducerRunner {
 
     private static final Logger log = LoggerFactory.getLogger(SensorProducerRunner.class);
 
@@ -44,6 +46,9 @@ public class SensorProducerRunner implements ApplicationRunner {
     private static final String TOPIC = "sensor-readings";
     private static final String[] SENSOR_IDS = {"sensor-1", "sensor-2", "sensor-3"};
     private static final String[] LOCATIONS = {"warehouse-A", "warehouse-B", "office-floor-1"};
+    private static final long SEND_INTERVAL_MS = 3000L;
+    private static final long BACKOFF_MS = 5000L;
+    private static final long SUMMARY_INTERVAL_MS = 60000L;
 
     @Value("${kafka.bootstrap-servers}")
     private String bootstrapServers;
@@ -75,11 +80,47 @@ public class SensorProducerRunner implements ApplicationRunner {
     @Value("${kafka.ssl.truststore-type:PKCS12}")
     private String sslTruststoreType;
 
-    @Override
-    public void run(ApplicationArguments args) throws Exception {
-        Schema schema = new Schema.Parser().parse(SCHEMA_JSON);
-        Random random = new Random();
+    private final AtomicLong producedWindow = new AtomicLong();
+    private final AtomicLong failedWindow = new AtomicLong();
+    private volatile long lastSuccessNanos = System.nanoTime();
+    private volatile boolean running = true;
+    private Thread worker;
+    private KafkaProducer<String, GenericRecord> producer;
+    private Schema schema;
 
+    @PostConstruct
+    void start() {
+        schema = new Schema.Parser().parse(SCHEMA_JSON);
+        producer = new KafkaProducer<>(buildProps());
+        worker = new Thread(this::loop, "sensor-producer");
+        worker.setDaemon(true);
+        worker.start();
+        log.info("Synthetic producer started. Sending to topic '{}' every {}ms.", TOPIC, SEND_INTERVAL_MS);
+    }
+
+    @PreDestroy
+    void stop() {
+        log.info("Shutting down synthetic producer...");
+        running = false;
+        if (worker != null) {
+            worker.interrupt();
+        }
+        if (producer != null) {
+            try {
+                producer.flush();
+            } catch (Exception e) {
+                log.warn("flush failed during shutdown", e);
+            }
+            producer.close(Duration.ofSeconds(5));
+        }
+        log.info("Synthetic producer stopped.");
+    }
+
+    public long millisSinceLastSuccess() {
+        return Duration.ofNanos(System.nanoTime() - lastSuccessNanos).toMillis();
+    }
+
+    private Properties buildProps() {
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -96,9 +137,6 @@ public class SensorProducerRunner implements ApplicationRunner {
             props.put("schema.registry.ssl.truststore.type", sslTruststoreType);
         }
 
-        // Idempotent producer — ensures exactly-once delivery semantics
-        // In Kafka 3.x+ this is the default, but setting explicitly for clarity.
-        // enable.idempotence=true implies acks=all, retries=Integer.MAX_VALUE, max.in.flight.requests.per.connection<=5
         props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
         props.put(ProducerConfig.ACKS_CONFIG, "all");
 
@@ -112,11 +150,15 @@ public class SensorProducerRunner implements ApplicationRunner {
             props.put("ssl.truststore.password", sslTruststorePassword);
             props.put("ssl.truststore.type", sslTruststoreType);
         }
+        return props;
+    }
 
-        try (KafkaProducer<String, GenericRecord> producer = new KafkaProducer<>(props)) {
-            log.info("Producer started. Sending to topic '{}' every 3 seconds...", TOPIC);
+    private void loop() {
+        Random random = new Random();
+        long nextSummary = System.currentTimeMillis() + SUMMARY_INTERVAL_MS;
 
-            while (!Thread.currentThread().isInterrupted()) {
+        while (running && !Thread.currentThread().isInterrupted()) {
+            try {
                 int idx = random.nextInt(SENSOR_IDS.length);
 
                 GenericRecord record = new GenericData.Record(schema);
@@ -127,20 +169,41 @@ public class SensorProducerRunner implements ApplicationRunner {
                 record.put("timestamp", Instant.now().toEpochMilli());
                 record.put("batteryLevel", 50.0 + random.nextDouble() * 50.0);
 
-                // Use sensorId as key — ensures all readings for the same sensor go to the same partition
                 String key = SENSOR_IDS[idx];
 
                 producer.send(new ProducerRecord<>(TOPIC, key, record), (metadata, ex) -> {
                     if (ex != null) {
-                        log.error("Failed to send record", ex);
+                        failedWindow.incrementAndGet();
+                        log.error("Failed to send record key={}", key, ex);
                     } else {
-                        log.info("Sent: key={}, partition={}, offset={}, value={}",
-                                key, metadata.partition(), metadata.offset(), record);
+                        lastSuccessNanos = System.nanoTime();
+                        producedWindow.incrementAndGet();
+                        log.info("Sent: key={}, partition={}, offset={}", key, metadata.partition(), metadata.offset());
                     }
                 });
 
-                Thread.sleep(3000);
+                if (System.currentTimeMillis() >= nextSummary) {
+                    log.info("window: produced={} failed={}", producedWindow.getAndSet(0), failedWindow.getAndSet(0));
+                    nextSummary = System.currentTimeMillis() + SUMMARY_INTERVAL_MS;
+                }
+
+                Thread.sleep(SEND_INTERVAL_MS);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                break;
+            } catch (Exception e) {
+                failedWindow.incrementAndGet();
+                log.warn("iteration failed, backing off {}ms", BACKOFF_MS, e);
+                sleepQuiet(BACKOFF_MS);
             }
+        }
+    }
+
+    private static void sleepQuiet(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
         }
     }
 }
