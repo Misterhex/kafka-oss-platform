@@ -1,5 +1,9 @@
-.claude
-.gradle
-.idea
-build
-certs
+**/target/
+artifacts/
+backups/
+*.log
+.DS_Store
+
+.env
+
+.idea/

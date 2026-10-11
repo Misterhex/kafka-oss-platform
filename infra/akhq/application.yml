@@ -1,0 +1,40 @@
+micronaut:
+  server:
+    port: 8080
+  security:
+    enabled: false
+endpoints:
+  all:
+    port: 28081
+  health:
+    enabled: true
+    sensitive: false
+akhq:
+  connections:
+    k0x-hk:
+      schema-registry:
+        url: http://schema-registry-k0x:8081
+      properties:
+        bootstrap.servers: k0x:19092
+        request.timeout.ms: 5000
+        default.api.timeout.ms: 15000
+      connect:
+        - name: connect-k0x
+          url: http://connect-k0x:8083
+    k0y-sg:
+      schema-registry:
+        url: http://schema-registry-k0y:8081
+      properties:
+        bootstrap.servers: k0y:19092
+        request.timeout.ms: 5000
+        default.api.timeout.ms: 15000
+      connect:
+        - name: connect-k0y
+          url: http://connect-k0y:8083
+  topic:
+    replication: 1
+    partition: 1
+  pagination:
+    threads: 2
+  security:
+    default-group: admin

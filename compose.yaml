@@ -1,0 +1,267 @@
+name: kafka-dr-lab
+
+x-java: &java
+  JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=2 -XX:TieredStopAtLevel=1
+
+x-broker: &broker
+  image: apache/kafka:4.1.1
+  networks: [replication, application]
+  healthcheck:
+    test: [CMD, bash, -c, "exec 3<>/dev/tcp/127.0.0.1/19092"]
+    interval: 15s
+    timeout: 3s
+    retries: 30
+    start_period: 30s
+
+x-broker-env: &broker-env
+  <<: *java
+  KAFKA_NODE_ID: 1
+  KAFKA_PROCESS_ROLES: broker,controller
+  KAFKA_LISTENERS: INTERNAL://0.0.0.0:19092,APP://0.0.0.0:9092,HOST://0.0.0.0:29092,CONTROLLER://0.0.0.0:19093
+  KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,APP:PLAINTEXT,HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+  KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+  KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+  KAFKA_LOG_DIRS: /var/lib/kafka/data
+  KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS: 1
+  KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+  KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+  KAFKA_TRANSACTION_STATE_LOG_NUM_PARTITIONS: 1
+  KAFKA_SHARE_COORDINATOR_STATE_TOPIC_REPLICATION_FACTOR: 1
+  KAFKA_SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR: 1
+  KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+  KAFKA_MIN_INSYNC_REPLICAS: 1
+  KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+  KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+  KAFKA_HEAP_OPTS: -Xms256m -Xmx512m
+
+x-connect: &connect
+  image: kafka-dr-connect:4.1.1
+  build:
+    context: .
+    dockerfile: infra/connect/Dockerfile
+  networks: [replication, administration]
+  healthcheck:
+    test: [CMD-SHELL, wget -q -O /dev/null http://localhost:8083/connectors]
+    interval: 15s
+    timeout: 4s
+    retries: 30
+    start_period: 60s
+    start_interval: 15s
+
+x-app: &app
+  image: kafka-dr-apps:1.0.0
+  build:
+    context: .
+    args: {MODULE: apps}
+  networks: [application, administration]
+  healthcheck: &http-health
+    test: [CMD-SHELL, wget -q -O /dev/null http://localhost:8080/actuator/health]
+    interval: 15s
+    timeout: 4s
+    retries: 24
+    start_period: 60s
+    start_interval: 15s
+
+x-registry: &registry
+  image: confluentinc/cp-schema-registry:8.1.1
+  networks: [replication, administration]
+  healthcheck:
+    test: [CMD-SHELL, "curl --fail --silent http://localhost:8081/subjects > /dev/null"]
+    interval: 10s
+    timeout: 5s
+    retries: 30
+    start_period: 30s
+
+x-registry-env: &registry-env
+  <<: *java
+  SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+  SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 1
+  SCHEMA_REGISTRY_MODE_MUTABILITY: 'true'
+  SCHEMA_REGISTRY_HEAP_OPTS: -Xms128m -Xmx256m
+
+services:
+  k0x:
+    <<: *broker
+    environment:
+      <<: *broker-env
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@k0x:19093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://k0x:19092,APP://k0x:9092,HOST://localhost:19092
+    ports: ['127.0.0.1:19092:29092']
+    volumes: [k0x-data:/var/lib/kafka/data]
+
+  k0y:
+    <<: *broker
+    environment:
+      <<: *broker-env
+      CLUSTER_ID: NDU2N0FCQ0RFRjEyMzQ1Ng
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@k0y:19093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://k0y:19092,APP://k0y:9092,HOST://localhost:29092
+    ports: ['127.0.0.1:29092:29092']
+    volumes: [k0y-data:/var/lib/kafka/data]
+
+  connect-k0x:
+    <<: *connect
+    environment:
+      <<: *java
+      BOOTSTRAP: k0x:19092
+      CLUSTER: k0x
+      KAFKA_HEAP_OPTS: -Xms128m -Xmx384m
+    ports: ['127.0.0.1:8083:8083']
+    depends_on:
+      k0x: {condition: service_healthy}
+
+  schema-registry-k0x:
+    <<: *registry
+    environment:
+      <<: *registry-env
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry-k0x
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://k0x:19092
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas_restored
+    ports: ['127.0.0.1:8086:8081']
+    depends_on:
+      k0x: {condition: service_healthy}
+
+  schema-registry-k0y:
+    <<: *registry
+    environment:
+      <<: *registry-env
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry-k0y
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://k0y:19092
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
+    ports: ['127.0.0.1:8087:8081']
+    depends_on:
+      k0y: {condition: service_healthy}
+
+  # Isolated destination for restore exercises; does not alter either site's registry.
+  schema-registry-restore:
+    <<: *registry
+    profiles: [schema-test]
+    environment:
+      <<: *registry-env
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry-restore
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://k0y:19092
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: ${RESTORE_SCHEMA_TOPIC:-_schemas_restore}
+      SCHEMA_REGISTRY_SCHEMA_REGISTRY_GROUP_ID: schema-registry-restore
+    ports: ['127.0.0.1:8088:8081']
+    depends_on:
+      k0y: {condition: service_healthy}
+
+  schema-registry-fixture:
+    <<: *registry
+    profiles: [schema-test]
+    environment:
+      <<: *registry-env
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry-fixture
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://k0x:19092
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas_fixture
+      SCHEMA_REGISTRY_SCHEMA_REGISTRY_GROUP_ID: schema-registry-fixture
+    ports: ['127.0.0.1:8089:8081']
+    depends_on:
+      k0x: {condition: service_healthy}
+
+  connect-k0y:
+    <<: *connect
+    environment:
+      <<: *java
+      BOOTSTRAP: k0y:19092
+      CLUSTER: k0y
+      KAFKA_HEAP_OPTS: -Xms128m -Xmx384m
+    ports: ['127.0.0.1:8084:8083']
+    depends_on:
+      k0y: {condition: service_healthy}
+      connect-k0x: {condition: service_healthy}
+
+  synthetic-producer:
+    <<: *app
+    user: '0:0'
+    environment:
+      <<: *java
+      ROLE: producer
+      BOOTSTRAP: ${APP_KAFKA_BOOTSTRAP:-k0x:9092}
+      # Empty selects the registry from BOOTSTRAP; optional explicit override for recovery.
+      SCHEMA_REGISTRY_URL: ${APP_SCHEMA_REGISTRY_URL:-}
+    ports: ['127.0.0.1:8081:8080']
+    volumes: [producer-state:/state]
+    depends_on:
+      connect-k0y: {condition: service_healthy}
+      schema-registry-k0x: {condition: service_healthy}
+      schema-registry-k0y: {condition: service_healthy}
+
+  synthetic-consumer:
+    <<: *app
+    environment:
+      <<: *java
+      ROLE: consumer
+      BOOTSTRAP: ${APP_KAFKA_BOOTSTRAP:-k0x:9092}
+      SCHEMA_REGISTRY_URL: ${APP_SCHEMA_REGISTRY_URL:-}
+    ports: ['127.0.0.1:8082:8080']
+    depends_on:
+      synthetic-producer: {condition: service_healthy}
+
+  dr-controller:
+    image: kafka-dr-controller:1.0.0
+    build:
+      context: .
+      args: {MODULE: controller}
+    user: '0:0'
+    environment: *java
+    ports: ['127.0.0.1:8080:8080']
+    volumes: [dr-state:/state]
+    networks: [replication, administration]
+    depends_on:
+      connect-k0x: {condition: service_healthy}
+      connect-k0y: {condition: service_healthy}
+      synthetic-consumer: {condition: service_healthy}
+    healthcheck: *http-health
+
+  akhq:
+    image: kafka-dr-akhq:0.26.0-java21
+    build:
+      context: .
+      dockerfile: infra/akhq/Dockerfile
+    environment: *java
+    ports: ['127.0.0.1:8085:8080']
+    volumes: ['./infra/akhq/application.yml:/app/application.yml:ro']
+    networks: [replication, administration]
+    depends_on:
+      dr-controller: {condition: service_healthy}
+    healthcheck:
+      test: [CMD-SHELL, wget -q -O /dev/null http://localhost:28081/health]
+      interval: 15s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+      start_interval: 15s
+
+  tools:
+    profiles: [tools]
+    image: kafka-dr-tools:1.0.0
+    build:
+      context: .
+      args: {MODULE: tools}
+    environment: *java
+    networks: [replication, administration]
+
+  schema-backup:
+    profiles: [tools]
+    image: kafka-dr-schema-backup:1.0.0
+    build:
+      context: .
+      args: {MODULE: schema-backup}
+    user: '0:0'
+    environment: *java
+    networks: [replication, administration]
+    volumes: ['./backups:/backups']
+
+networks:
+  replication: {}
+  application: {}
+  administration: {}
+
+volumes:
+  k0x-data: {}
+  k0y-data: {}
+  dr-state: {}
+  producer-state: {}

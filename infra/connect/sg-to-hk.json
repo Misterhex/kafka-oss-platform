@@ -1,0 +1,23 @@
+{
+  "name": "sg-to-hk",
+  "initial_state": "STOPPED",
+  "config": {
+    "connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector",
+    "tasks.max": "1",
+    "source.cluster.alias": "sg",
+    "target.cluster.alias": "hk",
+    "source.cluster.bootstrap.servers": "k0y:19092",
+    "target.cluster.bootstrap.servers": "k0x:19092",
+    "source.consumer.auto.offset.reset": "earliest",
+    "topics": "appTopic",
+    "replication.policy.class": "org.apache.kafka.connect.mirror.IdentityReplicationPolicy",
+    "replication.factor": "1",
+    "offset-syncs.topic.location": "target",
+    "offset-syncs.topic.replication.factor": "1",
+    "refresh.topics.interval.seconds": "1",
+    "sync.topic.acls.enabled": "false",
+    "sync.topic.configs.enabled": "false",
+    "key.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+    "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter"
+  }
+}
