@@ -76,3 +76,22 @@ The earlier three-partition configuration passed planned and forced recovery, of
   READONLY, then writable source scopes returned to READWRITE and an existing
   READONLY override remained unchanged. The dedicated test registry/topic were
   removed afterward; site registries were not involved in this live fixture test.
+
+## SG→HK application and schema replication — 2026-10-11
+
+- After the operator purged broker volumes, restarted all normal services and
+  resumed SG clients. Created fresh one-partition `appTopic` on SG.
+- Created/resumed `sg-to-hk` and `sg-to-hk-checkpoints` on HK Connect (8083).
+  Source includes `appTopic,.*schemas.*`; checkpoints scope `dr-consumer/appTopic`
+  with automatic group-offset application disabled. Both tasks are RUNNING.
+- HK Schema Registry was moved from the old `_schemas_restored` store to HK's
+  `_schemas`, pre-created compacted with one partition. Both site registries now
+  use `_schemas` on their own broker: HK READONLY, SG READWRITE.
+- Added Java SMT `KeepLocalSchemaModes` to preserve target-site modes while
+  copying all other schema-store records unchanged. Four transform unit tests
+  passed and both Connect worker images were rebuilt with its service registration.
+- Confirmed both registries list the same five schemas. A fresh SG READWRITE MODE
+  write did not overwrite HK READONLY. The live Avro replication smoke test passed:
+  all five types replicated byte-for-byte and decoded against HK's local registry.
+- No failover was performed. The old DR controller checkpoint remains unsuitable
+  for the manually selected SG primary and fresh broker data.

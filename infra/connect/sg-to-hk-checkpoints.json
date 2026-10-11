@@ -1,0 +1,24 @@
+{
+  "name": "sg-to-hk-checkpoints",
+  "initial_state": "STOPPED",
+  "config": {
+    "connector.class": "org.apache.kafka.connect.mirror.MirrorCheckpointConnector",
+    "tasks.max": "1",
+    "source.cluster.alias": "sg",
+    "target.cluster.alias": "hk",
+    "source.cluster.bootstrap.servers": "k0y:19092",
+    "target.cluster.bootstrap.servers": "k0x:19092",
+    "replication.policy.class": "org.apache.kafka.connect.mirror.IdentityReplicationPolicy",
+    "offset-syncs.topic.location": "target",
+    "groups": "dr-consumer",
+    "topics": "appTopic",
+    "checkpoints.topic.replication.factor": "1",
+    "refresh.groups.enabled": "true",
+    "refresh.groups.interval.seconds": "5",
+    "emit.checkpoints.enabled": "true",
+    "emit.checkpoints.interval.seconds": "5",
+    "sync.group.offsets.enabled": "false",
+    "key.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+    "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter"
+  }
+}

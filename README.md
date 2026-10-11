@@ -108,9 +108,10 @@ Confluent Schema Registry **8.1.1** runs independently on each site (HK REST por
 event types. The consumer decodes the Confluent schema-ID frame and also accepts
 retained legacy JSON events. Raw console-consumer output is binary for new events.
 See [SCHEMA-REGISTRY.md](SCHEMA-REGISTRY.md) for schema subjects, Java CLI commands,
-backup scope and full restore instructions. MM2 does not replicate registry state:
-restore schemas with their original IDs before switching a consumer to the other
-site's registry. The existing controller does not perform that schema operation.
+backup scope and full restore instructions. The manual `sg-to-hk` connector includes
+schema topics and keeps registry modes local via a Java Connect transform. HK uses
+its replicated `_schemas` in READONLY mode; SG is READWRITE. The controller's
+original app-topic-only workflow still requires explicit schema backup/restore.
 
 The controller captures committed event IDs every three seconds. Planned recovery pauses both clients, freezes a checkpoint, waits for the last source event in each partition to reach SG, stops the mirror, translates event IDs into SG offsets and restores the consumer group. It then persists **SG_ACTIVE** and leaves the clients paused for a manual restart against SG. Failed transitions remain paused and can be retried with the original force mode. Completed requests are idempotent.
 

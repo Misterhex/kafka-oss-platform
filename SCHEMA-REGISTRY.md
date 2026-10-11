@@ -7,7 +7,7 @@ Confluent serializer library, or Python is used.
 
 | Registry | Host REST URL | Docker REST URL | Persistent Kafka store |
 | --- | --- | --- | --- |
-| HK | http://localhost:8086 | http://schema-registry-k0x:8081 | k0x / `_schemas_restored` |
+| HK | http://localhost:8086 | http://schema-registry-k0x:8081 | k0x / `_schemas` |
 | SG | http://localhost:8087 | http://schema-registry-k0y:8081 | k0y / `_schemas` |
 | Restore exercise | http://localhost:8088 | http://schema-registry-restore:8081 | k0y / configurable fresh topic |
 | Integration fixture | http://localhost:8089 | http://schema-registry-fixture:8081 | k0x / `_schemas_fixture` |
@@ -45,13 +45,37 @@ curl -fsS http://localhost:8087/subjects
 curl -fsS http://localhost:8087/subjects/appTopic-lab.events.OrderCreated/versions/1
 ```
 
-MM2's ByteArrayConverters preserve the Avro frame and schema ID, but **MM2 does not
-copy registry state**. Before moving consumers to another site's registry, restore
-schemas with their original IDs. Independently registering the same five schemas
-in a registry with other preexisting schemas can assign different IDs and decode
-mirrored records incorrectly. The DR controller currently orchestrates Kafka only;
-schema backup/restore remains an explicit administration step. The fresh-lab DR test
-harness includes that step before failing over.
+MM2's ByteArrayConverters preserve the Avro frame and schema ID. Registry state is
+copied only when its backing topic is explicitly included. The manual SG→HK
+`infra/connect/sg-to-hk.json` configuration includes `appTopic,.*schemas.*`;
+the controller's original HK→SG bootstrap remains app-topic-only and its fresh-lab
+test harness uses schema backup/restore. Independently registering schemas on both
+sites can assign different IDs and decode mirrored records incorrectly.
+
+For the current SG-primary lab, `sg-to-hk` and `sg-to-hk-checkpoints` run on HK's
+Connect worker, port 8083. Both site registries use their own Kafka `_schemas` topic.
+HK's topic must be created with one partition and `cleanup.policy=compact` before
+starting replication because topic-config synchronization is disabled. Do not run
+the opposing direction concurrently with this IdentityReplicationPolicy setup.
+
+The Java SMT `lab.connect.KeepLocalSchemaModes` drops MODE keys (including their
+tombstones) only on topics containing `schemas`. It preserves all other records
+and their bytes, including schemas, references, config, deletion records and NOOPs.
+This keeps actual registry modes local: SG global READWRITE, HK global READONLY.
+Otherwise a later SG MODE record could overwrite HK's READONLY setting. Modes are
+still enforced through Schema Registry's own REST API, not Kafka topic permissions.
+HK mode is stored in HK's `_schemas`; it survives restarts. Reapply READONLY after
+an HK backing-topic purge/rebuild, and check scoped modes when importing another
+store. New matching source topics are discovered every second; ensure any newly
+mirrored registry backing topics also have the correct compacted target policy.
+
+`sg-to-hk-checkpoints` emits checkpoints for `dr-consumer` on `appTopic` every five
+seconds. Automatic consumer-group offset application stays disabled. Its config
+is in `infra/connect/sg-to-hk-checkpoints.json`. Neither connector is automatically
+created by Compose; install/resume them through Connect REST. Source bootstrap
+uses earliest for a full copy into a fresh HK store; preserve Connect offsets on
+later restarts. Schema copying is asynchronous: verify schemas exist on HK before
+switching an application to HK.
 
 ## Java CLI
 
@@ -146,7 +170,7 @@ curl -fsS http://localhost:8088/subjects/appTopic-lab.events.OrderCreated/versio
 Use another fresh topic name for a second restore exercise. Keep
 `RESTORE_SCHEMA_TOPIC` set when recreating this service; add it to `.env` if the
 exercise destination should persist across Compose commands. To restore HK's
-actual registry, stop `schema-registry-k0x` and restore to `k0x:19092/_schemas_restored` only
+actual registry, stop `schema-registry-k0x` and restore to `k0x:19092/_schemas` only
 when that topic is truly new/empty, then start its registry. The CLI never purges
 an existing destination.
 

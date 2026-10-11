@@ -9,7 +9,8 @@
     "source.cluster.bootstrap.servers": "k0y:19092",
     "target.cluster.bootstrap.servers": "k0x:19092",
     "source.consumer.auto.offset.reset": "earliest",
-    "topics": "appTopic",
+    "topics": "appTopic,.*schemas.*",
+    "topics.exclude": "__.*,.*[.-]internal,_connect-.*",
     "replication.policy.class": "org.apache.kafka.connect.mirror.IdentityReplicationPolicy",
     "replication.factor": "1",
     "offset-syncs.topic.location": "target",
@@ -17,6 +18,9 @@
     "refresh.topics.interval.seconds": "1",
     "sync.topic.acls.enabled": "false",
     "sync.topic.configs.enabled": "false",
+    "heartbeats.replication.enabled": "false",
+    "transforms": "localSchemaModes",
+    "transforms.localSchemaModes.type": "lab.connect.KeepLocalSchemaModes",
     "key.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
     "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter"
   }

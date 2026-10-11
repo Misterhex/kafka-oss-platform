@@ -7,6 +7,7 @@ COPY apps apps
 COPY controller controller
 COPY tools tools
 COPY schema-backup schema-backup
+COPY connect-transforms connect-transforms
 RUN mvn -B -ntp verify
 FROM apache/kafka:4.1.1
 USER root

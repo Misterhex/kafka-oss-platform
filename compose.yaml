@@ -118,7 +118,7 @@ services:
       <<: *registry-env
       SCHEMA_REGISTRY_HOST_NAME: schema-registry-k0x
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://k0x:19092
-      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas_restored
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
     ports: ['127.0.0.1:8086:8081']
     depends_on:
       k0x: {condition: service_healthy}

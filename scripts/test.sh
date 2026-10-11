@@ -12,7 +12,7 @@ if [[ "$(curl -fsS 'http://localhost:8087/subjects?deleted=true')" != '[]' ]]; t
   echo 'The DR test requires an empty SG registry; use a fresh lab.' >&2
   exit 1
 fi
-./scripts/schema-backup.sh backup --bootstrap=k0x:19092 --topic=_schemas_restored --file=/backups/dr-test.json --overwrite
+./scripts/schema-backup.sh backup --bootstrap=k0x:19092 --topic=_schemas --file=/backups/dr-test.json --overwrite
 docker compose stop schema-registry-k0y
 docker compose exec -T k0y /opt/kafka/bin/kafka-topics.sh \
   --bootstrap-server k0y:19092 --delete --if-exists --topic _schemas
