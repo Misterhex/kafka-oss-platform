@@ -3,6 +3,18 @@ set -euo pipefail
 mkdir -p /tmp/connect-plugins
 cat >/tmp/worker.properties <<EOF
 bootstrap.servers=${BOOTSTRAP}
+security.protocol=SASL_PLAINTEXT
+sasl.mechanism=PLAIN
+sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="platform" password="platform-lab";
+producer.security.protocol=SASL_PLAINTEXT
+producer.sasl.mechanism=PLAIN
+producer.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="mirror" password="mirror-lab";
+consumer.security.protocol=SASL_PLAINTEXT
+consumer.sasl.mechanism=PLAIN
+consumer.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="mirror" password="mirror-lab";
+admin.security.protocol=SASL_PLAINTEXT
+admin.sasl.mechanism=PLAIN
+admin.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="platform" password="platform-lab";
 group.id=connect-${CLUSTER}
 listeners=http://0.0.0.0:8083
 rest.advertised.host.name=connect-${CLUSTER}

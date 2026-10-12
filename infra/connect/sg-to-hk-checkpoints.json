@@ -19,6 +19,12 @@
     "emit.checkpoints.interval.seconds": "5",
     "sync.group.offsets.enabled": "false",
     "key.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
-    "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter"
+    "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+    "source.cluster.security.protocol": "SASL_PLAINTEXT",
+    "source.cluster.sasl.mechanism": "PLAIN",
+    "source.cluster.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"mirror\" password=\"mirror-lab\";",
+    "target.cluster.security.protocol": "SASL_PLAINTEXT",
+    "target.cluster.sasl.mechanism": "PLAIN",
+    "target.cluster.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"mirror\" password=\"mirror-lab\";"
   }
 }

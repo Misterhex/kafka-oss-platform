@@ -12,6 +12,6 @@ RUN mvn -B -ntp verify
 FROM apache/kafka:4.1.1
 USER root
 ARG MODULE
-COPY --from=build /src/${MODULE}/target/${MODULE}-1.0.0.jar /app/app.jar
+COPY --from=build /src/${MODULE}/target/${MODULE}-1.0.0.jar /opt/kafka/app.jar
 USER appuser
-ENTRYPOINT ["java","-Xms64m","-Xmx256m","-jar","/app/app.jar"]
+ENTRYPOINT ["java","-Xms64m","-Xmx256m","-jar","/opt/kafka/app.jar"]

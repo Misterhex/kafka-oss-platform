@@ -17,6 +17,7 @@ public final class LabTool {
   public static void main(String[] args) throws Exception {
     Object result =
         switch (args[0]) {
+          case "assert-dr" -> assertDr(args[1]);
           case "wait-connector" -> waitConnector(args[1], args[2], args[3]);
           case "reverse-offsets" -> reverseOffsets(new String(System.in.readAllBytes()), args[1]);
           case "akhq" -> checkAkhq();
@@ -34,6 +35,70 @@ public final class LabTool {
         };
     System.out.println(
         DurableJson.JSON.writerWithDefaultPrettyPrinter().writeValueAsString(result));
+  }
+
+  private static JsonNode assertDr(String primary) throws Exception {
+    return await(() -> {
+      var state = get(CONTROLLER + "/api/status");
+      require(state.path("primary").asText().equals(primary), "Wrong primary");
+      require(state.path("reverseStatus").asText().equals("RUNNING"), "Reverse not running: " + state);
+      var apps = get(CONTROLLER + "/api/apps");
+      for (String role : List.of("producer", "consumer")) {
+        var app = apps.path(role);
+        require(app.path("bootstrap").asText().equals(primary + ":9092"), "Wrong client bootstrap");
+        require(app.path("enabled").asBoolean() && app.path("count").asLong() > 5, "Client not processing");
+        require(app.path("errors").asLong() == 0, "Client errors: " + app);
+      }
+      String secondary = primary.equals("k0x") ? "k0y" : "k0x";
+      var before = apps.path("producer").path("count").asLong();
+      Thread.sleep(1000);
+      require(get(CONTROLLER + "/api/apps").path("producer").path("count").asLong() > before, "Producer stalled");
+      var active = KafkaSupport.scan(primary + ":19092");
+      var replica = KafkaSupport.scan(secondary + ":19092");
+      require(replica.get(0).containsKey(apps.path("producer").path("lastId").asText()), "Reverse has not copied recent event");
+      try (var admin = KafkaSupport.admin(secondary + ":19092")) {
+        var acls = admin.describeAcls(org.apache.kafka.common.acl.AclBindingFilter.ANY).values().get(15, TimeUnit.SECONDS);
+        for (String principal : List.of("User:producer", "User:consumer"))
+          require(acls.stream().anyMatch(a -> a.entry().principal().equals(principal)
+              && a.entry().permissionType() == org.apache.kafka.common.acl.AclPermissionType.DENY
+              && a.pattern().name().equals(KafkaSupport.TOPIC)), "Standby not fenced");
+      }
+      assertFenced(secondary);
+      var connectors = get("http://connect-" + primary + ":8083/connectors");
+      require(connectors.isEmpty(), "Old forward connectors still exist: " + connectors);
+      return apps;
+    });
+  }
+
+  private static void assertFenced(String site) throws Exception {
+    var producerProperties = KafkaSupport.properties(site + ":19092");
+    producerProperties.put("sasl.jaas.config", "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"producer\" password=\"producer-lab\";");
+    producerProperties.put("key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
+    producerProperties.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
+    producerProperties.put("max.block.ms", "5000");
+    try (var producer = new org.apache.kafka.clients.producer.KafkaProducer<byte[], byte[]>(producerProperties)) {
+      try {
+        producer.send(new org.apache.kafka.clients.producer.ProducerRecord<>(KafkaSupport.TOPIC, new byte[]{1}, new byte[]{1})).get(10, TimeUnit.SECONDS);
+        throw new IllegalStateException("Standby accepted application write");
+      } catch (Exception e) { require(authorizationFailure(e), "Expected authorization failure, got " + e); }
+    }
+    var consumerProperties = KafkaSupport.properties(site + ":19092");
+    consumerProperties.put("sasl.jaas.config", "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"consumer\" password=\"consumer-lab\";");
+    consumerProperties.put("key.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+    consumerProperties.put("value.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+    consumerProperties.put("enable.auto.commit", "false");
+    try (var consumer = new org.apache.kafka.clients.consumer.KafkaConsumer<byte[], byte[]>(consumerProperties)) {
+      consumer.assign(List.of(new TopicPartition(KafkaSupport.TOPIC, 0))); consumer.seek(new TopicPartition(KafkaSupport.TOPIC, 0), 0);
+      try {
+        consumer.poll(Duration.ofSeconds(10));
+        throw new IllegalStateException("Standby did not reject application read");
+      } catch (Exception e) { require(authorizationFailure(e), "Expected authorization failure, got " + e); }
+    }
+  }
+  private static boolean authorizationFailure(Throwable e) {
+    for (Throwable cause = e; cause != null; cause = cause.getCause())
+      if (cause instanceof org.apache.kafka.common.errors.AuthorizationException) return true;
+    return false;
   }
 
   private static JsonNode expectPhase(String phase) throws Exception {

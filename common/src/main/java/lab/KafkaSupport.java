@@ -14,6 +14,14 @@ public final class KafkaSupport {
   public static Properties properties(String bootstrap) {
     Properties p = new Properties();
     p.put("bootstrap.servers", bootstrap);
+    if (System.getenv().getOrDefault("LAB_KAFKA_SECURITY_PROTOCOL", "PLAINTEXT").equals("SASL_PLAINTEXT")) {
+      p.put("security.protocol", "SASL_PLAINTEXT");
+      p.put("sasl.mechanism", "PLAIN");
+      String user = System.getenv().getOrDefault("LAB_KAFKA_USERNAME", "platform");
+      String password = System.getenv().getOrDefault("LAB_KAFKA_PASSWORD", "platform-lab");
+      p.put("sasl.jaas.config", "org.apache.kafka.common.security.plain.PlainLoginModule required username=\""
+          + user + "\" password=\"" + password + "\";");
+    }
     p.put("request.timeout.ms", "5000");
     p.put("default.api.timeout.ms", "15000");
     p.put("client.dns.lookup", "use_all_dns_ips");

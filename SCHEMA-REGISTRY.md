@@ -48,12 +48,13 @@ curl -fsS http://localhost:8087/subjects/appTopic-lab.events.OrderCreated/versio
 MM2's ByteArrayConverters preserve the Avro frame and schema ID. Registry state is
 copied only when its backing topic is explicitly included. The manual SG→HK
 `infra/connect/sg-to-hk.json` configuration includes `appTopic,.*schemas.*`;
-the controller's original HK→SG bootstrap remains app-topic-only and its fresh-lab
-test harness uses schema backup/restore. Independently registering schemas on both
+the controller now includes `_schemas` in both directions, preserves schema IDs,
+and filters mode records so each site's registry mode remains local. Independently registering schemas on both
 sites can assign different IDs and decode mirrored records incorrectly.
 
-For the current SG-primary lab, `sg-to-hk` and `sg-to-hk-checkpoints` run on HK's
-Connect worker, port 8083. Both site registries use their own Kafka `_schemas` topic.
+When SG is primary, `sg-to-hk` and `sg-to-hk-checkpoints` run on HK's
+Connect worker, port 8083. When HK is primary, the opposite pair runs on SG's
+Connect worker, port 8084. Both site registries use their own Kafka `_schemas` topic.
 HK's topic must be created with one partition and `cleanup.policy=compact` before
 starting replication because topic-config synchronization is disabled. Do not run
 the opposing direction concurrently with this IdentityReplicationPolicy setup.
@@ -61,7 +62,8 @@ the opposing direction concurrently with this IdentityReplicationPolicy setup.
 The Java SMT `lab.connect.KeepLocalSchemaModes` drops MODE keys (including their
 tombstones) only on topics containing `schemas`. It preserves all other records
 and their bytes, including schemas, references, config, deletion records and NOOPs.
-This keeps actual registry modes local: SG global READWRITE, HK global READONLY.
+This keeps actual registry modes local: the primary is READWRITE, and the standby
+is READONLY.
 Otherwise a later SG MODE record could overwrite HK's READONLY setting. Modes are
 still enforced through Schema Registry's own REST API, not Kafka topic permissions.
 HK mode is stored in HK's `_schemas`; it survives restarts. Reapply READONLY after
@@ -71,8 +73,8 @@ mirrored registry backing topics also have the correct compacted target policy.
 
 `sg-to-hk-checkpoints` emits checkpoints for `dr-consumer` on `appTopic` every five
 seconds. Automatic consumer-group offset application stays disabled. Its config
-is in `infra/connect/sg-to-hk-checkpoints.json`. Neither connector is automatically
-created by Compose; install/resume them through Connect REST. Source bootstrap
+is in `infra/connect/sg-to-hk-checkpoints.json`. Compose alone does not create connectors; the DR controller creates and starts
+the appropriate pair during bootstrap or promotion. Source bootstrap
 uses earliest for a full copy into a fresh HK store; preserve Connect offsets on
 later restarts. Schema copying is asynchronous: verify schemas exist on HK before
 switching an application to HK.
@@ -96,8 +98,12 @@ mvn verify
 java -jar schema-backup/target/schema-backup-1.0.0.jar --help
 java -jar schema-backup/target/schema-backup-1.0.0.jar backup \
   --bootstrap=localhost:29092 \
-  --topic=_schemas --file=backups/sg.json
+  --topic=_schemas --file=backups/sg.json --kafka-properties=infra/kafka/client.properties
 ```
+
+All Kafka client listeners now require SASL/PLAIN. Compose supplies platform
+credentials to the backup container. For a host JAR invocation, pass
+`--kafka-properties=infra/kafka/client.properties` (public lab credentials).
 
 Host bootstrap ports are HK 19092 and SG 29092. Inside Docker they are respectively
 `k0x:19092` and `k0y:19092`. `--kafka-properties=/path/client.properties` supplies
@@ -142,7 +148,8 @@ Print the final logical state with decoded JSON keys/values:
 
 ## Restore into a brand-new registry
 
-Stop **all destination registry instances** before restoring. The CLI's
+Stop **all destination registry instances** and any MirrorMaker connector writing
+the destination backing topic before restoring. The CLI's
 `--registry-stopped` flag acknowledges that operator precondition; it cannot
 independently fence registry instances. The destination commit-log topic must be
 new/empty, with beginning and end offsets both zero. An existing empty REST subject

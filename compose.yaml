@@ -2,6 +2,9 @@ name: kafka-dr-lab
 
 x-java: &java
   JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=2 -XX:TieredStopAtLevel=1
+  LAB_KAFKA_SECURITY_PROTOCOL: SASL_PLAINTEXT
+  LAB_KAFKA_USERNAME: platform
+  LAB_KAFKA_PASSWORD: platform-lab
 
 x-broker: &broker
   image: apache/kafka:4.1.1
@@ -18,7 +21,16 @@ x-broker-env: &broker-env
   KAFKA_NODE_ID: 1
   KAFKA_PROCESS_ROLES: broker,controller
   KAFKA_LISTENERS: INTERNAL://0.0.0.0:19092,APP://0.0.0.0:9092,HOST://0.0.0.0:29092,CONTROLLER://0.0.0.0:19093
-  KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,APP:PLAINTEXT,HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+  KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:SASL_PLAINTEXT,APP:SASL_PLAINTEXT,HOST:SASL_PLAINTEXT,CONTROLLER:PLAINTEXT
+  KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
+  KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
+  KAFKA_LISTENER_NAME_INTERNAL_PLAIN_SASL_JAAS_CONFIG: &lab-jaas 'org.apache.kafka.common.security.plain.PlainLoginModule required username="platform" password="platform-lab" user_platform="platform-lab" user_mirror="mirror-lab" user_producer="producer-lab" user_consumer="consumer-lab";'
+  KAFKA_LISTENER_NAME_APP_PLAIN_SASL_JAAS_CONFIG: *lab-jaas
+  KAFKA_LISTENER_NAME_HOST_PLAIN_SASL_JAAS_CONFIG: *lab-jaas
+  KAFKA_AUTHORIZER_CLASS_NAME: org.apache.kafka.metadata.authorizer.StandardAuthorizer
+  KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: 'false'
+  # ANONYMOUS is only available on the isolated controller listener. All client listeners require SASL.
+  KAFKA_SUPER_USERS: 'User:platform;User:mirror;User:ANONYMOUS'
   KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
   KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
   KAFKA_LOG_DIRS: /var/lib/kafka/data
@@ -77,6 +89,9 @@ x-registry-env: &registry-env
   <<: *java
   SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
   SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 1
+  SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL: SASL_PLAINTEXT
+  SCHEMA_REGISTRY_KAFKASTORE_SASL_MECHANISM: PLAIN
+  SCHEMA_REGISTRY_KAFKASTORE_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="platform" password="platform-lab";'
   SCHEMA_REGISTRY_MODE_MUTABILITY: 'true'
   SCHEMA_REGISTRY_HEAP_OPTS: -Xms128m -Xmx256m
 
@@ -89,7 +104,7 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@k0x:19093
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://k0x:19092,APP://k0x:9092,HOST://localhost:19092
     ports: ['127.0.0.1:19092:29092']
-    volumes: [k0x-data:/var/lib/kafka/data]
+    volumes: [k0x-data:/var/lib/kafka/data, ./infra/kafka/client.properties:/opt/lab/client.properties:ro]
 
   k0y:
     <<: *broker
@@ -99,7 +114,7 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@k0y:19093
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://k0y:19092,APP://k0y:9092,HOST://localhost:29092
     ports: ['127.0.0.1:29092:29092']
-    volumes: [k0y-data:/var/lib/kafka/data]
+    volumes: [k0y-data:/var/lib/kafka/data, ./infra/kafka/client.properties:/opt/lab/client.properties:ro]
 
   connect-k0x:
     <<: *connect
@@ -117,7 +132,7 @@ services:
     environment:
       <<: *registry-env
       SCHEMA_REGISTRY_HOST_NAME: schema-registry-k0x
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://k0x:19092
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: SASL_PLAINTEXT://k0x:19092
       SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
     ports: ['127.0.0.1:8086:8081']
     depends_on:
@@ -128,7 +143,7 @@ services:
     environment:
       <<: *registry-env
       SCHEMA_REGISTRY_HOST_NAME: schema-registry-k0y
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://k0y:19092
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: SASL_PLAINTEXT://k0y:19092
       SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
     ports: ['127.0.0.1:8087:8081']
     depends_on:
@@ -141,7 +156,7 @@ services:
     environment:
       <<: *registry-env
       SCHEMA_REGISTRY_HOST_NAME: schema-registry-restore
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://k0y:19092
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: SASL_PLAINTEXT://k0y:19092
       SCHEMA_REGISTRY_KAFKASTORE_TOPIC: ${RESTORE_SCHEMA_TOPIC:-_schemas_restore}
       SCHEMA_REGISTRY_SCHEMA_REGISTRY_GROUP_ID: schema-registry-restore
     ports: ['127.0.0.1:8088:8081']
@@ -154,7 +169,7 @@ services:
     environment:
       <<: *registry-env
       SCHEMA_REGISTRY_HOST_NAME: schema-registry-fixture
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://k0x:19092
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: SASL_PLAINTEXT://k0x:19092
       SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas_fixture
       SCHEMA_REGISTRY_SCHEMA_REGISTRY_GROUP_ID: schema-registry-fixture
     ports: ['127.0.0.1:8089:8081']
@@ -179,6 +194,8 @@ services:
     environment:
       <<: *java
       ROLE: producer
+      LAB_KAFKA_USERNAME: producer
+      LAB_KAFKA_PASSWORD: producer-lab
       BOOTSTRAP: ${APP_KAFKA_BOOTSTRAP:-k0x:9092}
       # Empty selects the registry from BOOTSTRAP; optional explicit override for recovery.
       SCHEMA_REGISTRY_URL: ${APP_SCHEMA_REGISTRY_URL:-}
@@ -194,6 +211,8 @@ services:
     environment:
       <<: *java
       ROLE: consumer
+      LAB_KAFKA_USERNAME: consumer
+      LAB_KAFKA_PASSWORD: consumer-lab
       BOOTSTRAP: ${APP_KAFKA_BOOTSTRAP:-k0x:9092}
       SCHEMA_REGISTRY_URL: ${APP_SCHEMA_REGISTRY_URL:-}
     ports: ['127.0.0.1:8082:8080']
