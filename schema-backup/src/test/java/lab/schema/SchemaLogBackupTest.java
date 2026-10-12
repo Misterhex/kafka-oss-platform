@@ -9,6 +9,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class SchemaLogBackupTest {
+  @Test void backupRejectsRegistryUrlBeforeAccessingTheRegistry() {
+    var error = assertThrows(IllegalArgumentException.class,
+        () -> new SchemaBackupApplication().run(new org.springframework.boot.DefaultApplicationArguments(
+            "backup", "--bootstrap=localhost:1", "--file=backup.json", "--registry-url=http://localhost:1")));
+    assertEquals("Unknown option: registry-url", error.getMessage());
+  }
+
   @TempDir Path directory;
   private SchemaLogBackup.Entry entry(long offset, String key, String value) {
     return new SchemaLogBackup.Entry(offset, 1234,

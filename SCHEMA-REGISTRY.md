@@ -95,7 +95,7 @@ Or run the same fat JAR locally:
 mvn verify
 java -jar schema-backup/target/schema-backup-1.0.0.jar --help
 java -jar schema-backup/target/schema-backup-1.0.0.jar backup \
-  --bootstrap=localhost:29092 --registry-url=http://localhost:8087 \
+  --bootstrap=localhost:29092 \
   --topic=_schemas --file=backups/sg.json
 ```
 
@@ -106,18 +106,18 @@ when running it in Docker.
 
 ## Back up SG to disk
 
-Supply `--registry-url` for an automatic READONLY window while backing up a running
-registry. The URL must identify the registry using the supplied Kafka cluster/topic.
-The CLI reads the previous global mode and all stored subject/context mode
-overrides, sets writable scopes to READONLY, captures the Kafka topic, then restores
-the previous modes in reverse order, including when capture fails. A previously
-READWRITE source returns to READWRITE; an intentionally READONLY source stays so.
-The backup contains READONLY modes, so a recovered destination starts READONLY.
-Existing-schema producers and consumers can continue during the backup.
+Backup reads the Kafka topic directly and makes no Schema Registry REST calls.
+It does not change global, subject, or context modes. Stored mode records are
+captured exactly as they exist in the topic.
+
+Quiesce schema/config/mode/deletion writes before capture, for example by stopping
+all source registry instances. The CLI rejects a changing end offset; it does not
+provide a writer fence. Existing-schema producers and consumers can continue if
+the registry remains available and administrative writes are quiesced.
 
 ```bash
 ./scripts/schema-backup.sh backup \
-  --bootstrap=k0y:19092 --registry-url=http://schema-registry-k0y:8081 \
+  --bootstrap=k0y:19092 \
   --topic=_schemas --file=/backups/sg.json --overwrite
 ```
 
@@ -130,15 +130,9 @@ headers and source offsets. Source offsets are informational and are not recreat
 in Kafka. Back up outside the Docker host as well for real disaster recovery.
 
 Avoid concurrent administrative/config/mode changes or direct backing-topic
-writers, and let in-flight schema changes finish before capture. The guard is not
-an atomic transaction or an administrative fence; an end-offset change still
-aborts capture. Without `--registry-url`, backup remains a generic raw-topic read
-and the operator must quiesce writers (for example by stopping the registry).
-If the CLI is killed or the registry becomes unreachable, mode cleanup cannot be
-guaranteed: check source modes manually. Cleanup failures cause a nonzero exit even
-when a backup file was written. The initial override-discovery scan can also fail
-if registry writes are ongoing; retry after quiescing them. No REST authentication
-options are provided in this lab.
+writers, and let in-flight schema changes finish before capture. An end-offset
+change aborts capture; retry after quiescing writers. Backup never modifies the
+source registry modes and does not require a registry URL.
 
 Print the final logical state with decoded JSON keys/values:
 

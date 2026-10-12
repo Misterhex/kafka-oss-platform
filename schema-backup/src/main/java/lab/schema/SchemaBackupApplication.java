@@ -20,9 +20,8 @@ public class SchemaBackupApplication implements ApplicationRunner {
       System.out.println("""
           Schema Registry 8.1.1 backup CLI (Java 21)
           backup  --bootstrap=HOST:PORT --file=PATH [--topic=_schemas] [--overwrite]
-                  [--registry-url=http://HOST:PORT]
-          Backup with --registry-url freezes global/stored scoped modes to READONLY and
-          restores previous modes afterward, including on failure. Backup contains READONLY.
+                  [--kafka-properties=PATH]
+          Backup reads Kafka only and preserves stored records without changing registry modes.
           inspect --file=PATH
           restore --bootstrap=HOST:PORT --file=PATH --registry-stopped
                   [--topic=_schemas] [--replication-factor=1] [--kafka-properties=PATH]
@@ -42,7 +41,7 @@ public class SchemaBackupApplication implements ApplicationRunner {
     if (args.getNonOptionArgs().size() != 1) throw new IllegalArgumentException("Specify backup, inspect or restore; use --help");
     String command = args.getNonOptionArgs().getFirst();
     Set<String> allowed = switch (command) {
-      case "backup" -> Set.of("bootstrap", "file", "topic", "overwrite", "kafka-properties", "registry-url");
+      case "backup" -> Set.of("bootstrap", "file", "topic", "overwrite", "kafka-properties");
       case "restore" -> Set.of("bootstrap", "file", "topic", "registry-stopped", "replication-factor", "kafka-properties", "via-import", "registry-url", "allow-checksum-mismatch");
       case "inspect" -> Set.of("file");
       default -> throw new IllegalArgumentException("Unknown command: " + command);
@@ -71,10 +70,7 @@ public class SchemaBackupApplication implements ApplicationRunner {
     if (command.equals("backup")) {
       boolean overwrite = args.containsOption("overwrite");
       if (java.nio.file.Files.exists(file) && !overwrite) throw new IllegalArgumentException("Backup already exists; use another file or --overwrite");
-      if (args.containsOption("registry-url")) {
-        var guard = new SchemaRegistryBackup(required(args, "registry-url"));
-        guard.withReadonly(service.capture(), () -> service.backup(file, overwrite));
-      } else service.backup(file, overwrite);
+      service.backup(file, overwrite);
     }
     else {
       if (!args.containsOption("registry-stopped"))

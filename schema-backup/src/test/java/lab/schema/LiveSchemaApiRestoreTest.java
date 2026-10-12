@@ -32,19 +32,16 @@ class LiveSchemaApiRestoreTest {
       registry.request("PUT", "/mode", Map.of("mode", "READWRITE"));
       registry.request("PUT", "/mode/shared-one", Map.of("mode", "READWRITE"));
       var log = new SchemaLogBackup("localhost:29092", backingTopic, new Properties());
-      Path guarded = Path.of("../artifacts/schema-import-test/readonly-backup.json").toAbsolutePath();
-      new SchemaRegistryBackup(url).withReadonly(log.capture(), () -> {
-        assertEquals("READONLY", registry.request("GET", "/mode", null).path("mode").asText());
-        assertEquals("READONLY", registry.request("GET", "/mode/shared-one", null).path("mode").asText());
-        log.backup(guarded, true);
-      });
+      Path guarded = Path.of("../artifacts/schema-import-test/raw-backup.json").toAbsolutePath();
+      log.backup(guarded, true);
       assertEquals("READWRITE", registry.request("GET", "/mode", null).path("mode").asText());
       assertEquals("READWRITE", registry.request("GET", "/mode/shared-one", null).path("mode").asText());
       assertEquals("READONLY", registry.request("GET", "/mode/shared-two", null).path("mode").asText());
       for (var entry : SchemaLogBackup.logicalState(SchemaLogBackup.load(guarded)).entrySet()) {
         var key = DurableJson.JSON.readTree(SchemaLogBackup.decode(entry.getKey()));
         if (key.path("keytype").asText().equals("MODE"))
-          assertEquals("READONLY", DurableJson.JSON.readTree(SchemaLogBackup.decode(entry.getValue())).path("mode").asText());
+          assertEquals(key.path("subject").asText().equals("shared-two") ? "READONLY" : "READWRITE",
+              DurableJson.JSON.readTree(SchemaLogBackup.decode(entry.getValue())).path("mode").asText());
       }
     }
     assertEquals("FULL_TRANSITIVE", registry.request("GET", "/config", null).path("compatibilityLevel").asText());
