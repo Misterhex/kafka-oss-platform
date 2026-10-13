@@ -1,0 +1,39 @@
+{
+  "phase" : "HK_ACTIVE",
+  "primary" : "k0x",
+  "error" : "",
+  "target" : "k0x",
+  "reverseStatus" : "RUNNING",
+  "checkpoint" : {
+    "capturedAt" : "2026-10-13T01:20:04.290087523Z",
+    "barriers" : {
+      "0" : "18bf2bd8-2dbe-4fd9-b7c1-e9318ad8cf8e"
+    }
+  },
+  "sourceCluster" : "k0x",
+  "sourceCapturedAt" : "2026-10-13T01:20:04.286180992Z",
+  "sourceGroupOffsets" : {
+    "dr-consumer" : {
+      "appTopic:0" : 754472
+    }
+  },
+  "sourceEnds" : {
+    "_schemas:0" : 27,
+    "appTopic:0" : 754472
+  },
+  "targetEnds" : {
+    "_schemas:0" : 24,
+    "appTopic:0" : 84009
+  },
+  "schemas" : {
+    "eyJrZXl0eXBlIjoiU0NIRU1BIiwic3ViamVjdCI6ImFwcFRvcGljLWxhYi5ldmVudHMuQ3VzdG9tZXJVcGRhdGVkIiwidmVyc2lvbiI6MSwibWFnaWMiOjF9" : "eyJzdWJqZWN0IjoiYXBwVG9waWMtbGFiLmV2ZW50cy5DdXN0b21lclVwZGF0ZWQiLCJ2ZXJzaW9uIjoxLCJpZCI6NSwic2NoZW1hVHlwZSI6IkFWUk8iLCJzY2hlbWEiOiJ7XCJ0eXBlXCI6XCJyZWNvcmRcIixcIm5hbWVcIjpcIkN1c3RvbWVyVXBkYXRlZFwiLFwibmFtZXNwYWNlXCI6XCJsYWIuZXZlbnRzXCIsXCJmaWVsZHNcIjpbe1wibmFtZVwiOlwiaWRcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJzZXFOb1wiLFwidHlwZVwiOlwibG9uZ1wifSx7XCJuYW1lXCI6XCJjcmVhdGVkQXRcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJldmVudFR5cGVcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJjdXN0b21lcklkXCIsXCJ0eXBlXCI6XCJzdHJpbmdcIn1dfSIsImRlbGV0ZWQiOmZhbHNlfQ==",
+    "eyJrZXl0eXBlIjoiU0NIRU1BIiwic3ViamVjdCI6ImFwcFRvcGljLWxhYi5ldmVudHMuSW52ZW50b3J5VXBkYXRlZCIsInZlcnNpb24iOjEsIm1hZ2ljIjoxfQ==" : "eyJzdWJqZWN0IjoiYXBwVG9waWMtbGFiLmV2ZW50cy5JbnZlbnRvcnlVcGRhdGVkIiwidmVyc2lvbiI6MSwiaWQiOjQsInNjaGVtYVR5cGUiOiJBVlJPIiwic2NoZW1hIjoie1widHlwZVwiOlwicmVjb3JkXCIsXCJuYW1lXCI6XCJJbnZlbnRvcnlVcGRhdGVkXCIsXCJuYW1lc3BhY2VcIjpcImxhYi5ldmVudHNcIixcImZpZWxkc1wiOlt7XCJuYW1lXCI6XCJpZFwiLFwidHlwZVwiOlwic3RyaW5nXCJ9LHtcIm5hbWVcIjpcInNlcU5vXCIsXCJ0eXBlXCI6XCJsb25nXCJ9LHtcIm5hbWVcIjpcImNyZWF0ZWRBdFwiLFwidHlwZVwiOlwic3RyaW5nXCJ9LHtcIm5hbWVcIjpcImV2ZW50VHlwZVwiLFwidHlwZVwiOlwic3RyaW5nXCJ9LHtcIm5hbWVcIjpcInNrdVwiLFwidHlwZVwiOlwic3RyaW5nXCJ9XX0iLCJkZWxldGVkIjpmYWxzZX0=",
+    "eyJrZXl0eXBlIjoiU0NIRU1BIiwic3ViamVjdCI6ImFwcFRvcGljLWxhYi5ldmVudHMuT3JkZXJDcmVhdGVkIiwidmVyc2lvbiI6MSwibWFnaWMiOjF9" : "eyJzdWJqZWN0IjoiYXBwVG9waWMtbGFiLmV2ZW50cy5PcmRlckNyZWF0ZWQiLCJ2ZXJzaW9uIjoxLCJpZCI6MSwic2NoZW1hVHlwZSI6IkFWUk8iLCJzY2hlbWEiOiJ7XCJ0eXBlXCI6XCJyZWNvcmRcIixcIm5hbWVcIjpcIk9yZGVyQ3JlYXRlZFwiLFwibmFtZXNwYWNlXCI6XCJsYWIuZXZlbnRzXCIsXCJmaWVsZHNcIjpbe1wibmFtZVwiOlwiaWRcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJzZXFOb1wiLFwidHlwZVwiOlwibG9uZ1wifSx7XCJuYW1lXCI6XCJjcmVhdGVkQXRcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJldmVudFR5cGVcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJvcmRlcklkXCIsXCJ0eXBlXCI6XCJzdHJpbmdcIn1dfSIsImRlbGV0ZWQiOmZhbHNlfQ==",
+    "eyJrZXl0eXBlIjoiU0NIRU1BIiwic3ViamVjdCI6ImFwcFRvcGljLWxhYi5ldmVudHMuU2hpcG1lbnREaXNwYXRjaGVkIiwidmVyc2lvbiI6MSwibWFnaWMiOjF9" : "eyJzdWJqZWN0IjoiYXBwVG9waWMtbGFiLmV2ZW50cy5TaGlwbWVudERpc3BhdGNoZWQiLCJ2ZXJzaW9uIjoxLCJpZCI6Mywic2NoZW1hVHlwZSI6IkFWUk8iLCJzY2hlbWEiOiJ7XCJ0eXBlXCI6XCJyZWNvcmRcIixcIm5hbWVcIjpcIlNoaXBtZW50RGlzcGF0Y2hlZFwiLFwibmFtZXNwYWNlXCI6XCJsYWIuZXZlbnRzXCIsXCJmaWVsZHNcIjpbe1wibmFtZVwiOlwiaWRcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJzZXFOb1wiLFwidHlwZVwiOlwibG9uZ1wifSx7XCJuYW1lXCI6XCJjcmVhdGVkQXRcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJldmVudFR5cGVcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJzaGlwbWVudElkXCIsXCJ0eXBlXCI6XCJzdHJpbmdcIn1dfSIsImRlbGV0ZWQiOmZhbHNlfQ==",
+    "eyJrZXl0eXBlIjoiU0NIRU1BIiwic3ViamVjdCI6ImFwcFRvcGljLWxhYi5ldmVudHMuUGF5bWVudFJlY2VpdmVkIiwidmVyc2lvbiI6MSwibWFnaWMiOjF9" : "eyJzdWJqZWN0IjoiYXBwVG9waWMtbGFiLmV2ZW50cy5QYXltZW50UmVjZWl2ZWQiLCJ2ZXJzaW9uIjoxLCJpZCI6Miwic2NoZW1hVHlwZSI6IkFWUk8iLCJzY2hlbWEiOiJ7XCJ0eXBlXCI6XCJyZWNvcmRcIixcIm5hbWVcIjpcIlBheW1lbnRSZWNlaXZlZFwiLFwibmFtZXNwYWNlXCI6XCJsYWIuZXZlbnRzXCIsXCJmaWVsZHNcIjpbe1wibmFtZVwiOlwiaWRcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJzZXFOb1wiLFwidHlwZVwiOlwibG9uZ1wifSx7XCJuYW1lXCI6XCJjcmVhdGVkQXRcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJldmVudFR5cGVcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJwYXltZW50SWRcIixcInR5cGVcIjpcInN0cmluZ1wifV19IiwiZGVsZXRlZCI6ZmFsc2V9"
+  },
+  "skipped" : [ ],
+  "forced" : false,
+  "checkpointFrozen" : true,
+  "sourceReachable" : true
+}
