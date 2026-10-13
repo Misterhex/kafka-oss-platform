@@ -1,0 +1,7 @@
+Picked up JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=2 -XX:TieredStopAtLevel=1
+OffsetSync{topicPartition=appTopic-0, upstreamOffset=84064, downstreamOffset=84064}
+OffsetSync{topicPartition=appTopic-0, upstreamOffset=84073, downstreamOffset=84073}
+OffsetSync{topicPartition=appTopic-0, upstreamOffset=84083, downstreamOffset=84083}
+OffsetSync{topicPartition=appTopic-0, upstreamOffset=84093, downstreamOffset=84093}
+OffsetSync{topicPartition=appTopic-0, upstreamOffset=84102, downstreamOffset=84102}
+Processed a total of 5 messages

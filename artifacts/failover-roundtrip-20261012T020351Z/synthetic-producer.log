@@ -1,0 +1,23 @@
+synthetic-producer-1  | 2026-10-12T02:07:11.540933289Z Picked up JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=2 -XX:TieredStopAtLevel=1
+synthetic-producer-1  | 2026-10-12T02:07:12.387497120Z 
+synthetic-producer-1  | 2026-10-12T02:07:12.387551064Z   .   ____          _            __ _ _
+synthetic-producer-1  | 2026-10-12T02:07:12.387554231Z  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+synthetic-producer-1  | 2026-10-12T02:07:12.387556264Z ( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+synthetic-producer-1  | 2026-10-12T02:07:12.387558191Z  \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+synthetic-producer-1  | 2026-10-12T02:07:12.387560210Z   '  |____| .__|_| |_|_| |_\__, | / / / /
+synthetic-producer-1  | 2026-10-12T02:07:12.387561973Z  =========|_|==============|___/=/_/_/_/
+synthetic-producer-1  | 2026-10-12T02:07:12.387563703Z 
+synthetic-producer-1  | 2026-10-12T02:07:12.388104026Z  :: Spring Boot ::                (v4.0.3)
+synthetic-producer-1  | 2026-10-12T02:07:12.388116754Z 
+synthetic-producer-1  | 2026-10-12T02:07:12.470925069Z 2026-10-12T02:07:12.464Z  INFO 1 --- [           main] lab.SyntheticApplication                 : Starting SyntheticApplication v1.0.0 using Java 21.0.8 with PID 1 (/opt/kafka/app.jar started by root in /)
+synthetic-producer-1  | 2026-10-12T02:07:12.470942539Z 2026-10-12T02:07:12.470Z  INFO 1 --- [           main] lab.SyntheticApplication                 : No active profile set, falling back to 1 default profile: "default"
+synthetic-producer-1  | 2026-10-12T02:07:13.510238044Z 2026-10-12T02:07:13.509Z  INFO 1 --- [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+synthetic-producer-1  | 2026-10-12T02:07:13.522760312Z 2026-10-12T02:07:13.522Z  INFO 1 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+synthetic-producer-1  | 2026-10-12T02:07:13.523079933Z 2026-10-12T02:07:13.522Z  INFO 1 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.18]
+synthetic-producer-1  | 2026-10-12T02:07:13.548192537Z 2026-10-12T02:07:13.547Z  INFO 1 --- [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 938 ms
+synthetic-producer-1  | 2026-10-12T02:07:14.132255716Z 2026-10-12T02:07:14.131Z  INFO 1 --- [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
+synthetic-producer-1  | 2026-10-12T02:07:14.177941330Z 2026-10-12T02:07:14.177Z  INFO 1 --- [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
+synthetic-producer-1  | 2026-10-12T02:07:14.183439211Z 2026-10-12T02:07:14.183Z  INFO 1 --- [           main] lab.SyntheticApplication                 : Started SyntheticApplication in 2.112 seconds (process running for 2.642)
+synthetic-producer-1  | 2026-10-12T02:07:26.644192052Z 2026-10-12T02:07:26.643Z  INFO 1 --- [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+synthetic-producer-1  | 2026-10-12T02:07:26.644525693Z 2026-10-12T02:07:26.644Z  INFO 1 --- [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+synthetic-producer-1  | 2026-10-12T02:07:26.646057823Z 2026-10-12T02:07:26.645Z  INFO 1 --- [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms

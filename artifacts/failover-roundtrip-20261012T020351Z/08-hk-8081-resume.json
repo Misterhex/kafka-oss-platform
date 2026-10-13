@@ -1,0 +1,14 @@
+{
+  "clusterId": "",
+  "bootstrap": "k0x:9092",
+  "lastId": "",
+  "role": "producer",
+  "enabled": true,
+  "seqNo": 84107,
+  "lastError": "",
+  "errors": 0,
+  "idle": true,
+  "count": 0,
+  "schemaRegistryUrl": "http://schema-registry-k0x:8081",
+  "registeredSchemas": {}
+}

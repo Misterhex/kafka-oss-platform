@@ -1,0 +1,919 @@
+{
+  "startedAt": "2026-10-12T02:03:51Z",
+  "directory": "/workspace/kafka-oss-platform/artifacts/failover-roundtrip-20261012T020351Z",
+  "steps": [
+    {
+      "startedAt": "2026-10-12T02:03:51.847694+00:00",
+      "finishedAt": "2026-10-12T02:03:53.821868+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0x",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0x:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "00-initial-k0x-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:03:53.822052+00:00",
+      "finishedAt": "2026-10-12T02:03:55.764194+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0y",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0y:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "00-initial-k0y-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "operation": "promote",
+      "target": "k0y",
+      "startedAt": "2026-10-12T02:03:55.825930+00:00",
+      "finishedAt": "2026-10-12T02:04:04.426446+00:00",
+      "elapsedSeconds": 8.601,
+      "evidence": "01-sg-promotion.json"
+    },
+    {
+      "startedAt": "2026-10-12T02:04:04.444583+00:00",
+      "finishedAt": "2026-10-12T02:04:39.802157+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "up",
+        "-d",
+        "--no-deps",
+        "--no-build",
+        "--force-recreate",
+        "--wait",
+        "--wait-timeout",
+        "120",
+        "synthetic-producer",
+        "synthetic-consumer"
+      ],
+      "log": "02-sg-client-restart.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:04:41.894412+00:00",
+      "finishedAt": "2026-10-12T02:04:46.688805+00:00",
+      "command": [
+        "./scripts/lab.sh",
+        "assert-dr",
+        "k0y"
+      ],
+      "log": "03-sg-traffic-replication-and-acl-assertions.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:04:46.731143+00:00",
+      "finishedAt": "2026-10-12T02:04:48.605677+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0x",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0x:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "04-sg-sample-00-k0x-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:04:48.605901+00:00",
+      "finishedAt": "2026-10-12T02:04:50.488130+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0y",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0y:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "04-sg-sample-00-k0y-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:05:01.738451+00:00",
+      "finishedAt": "2026-10-12T02:05:03.505038+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0x",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0x:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "04-sg-sample-01-k0x-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:05:03.505381+00:00",
+      "finishedAt": "2026-10-12T02:05:05.242377+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0y",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0y:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "04-sg-sample-01-k0y-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:05:16.736908+00:00",
+      "finishedAt": "2026-10-12T02:05:18.545236+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0x",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0x:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "04-sg-sample-02-k0x-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:05:18.545648+00:00",
+      "finishedAt": "2026-10-12T02:05:20.260793+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0y",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0y:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "04-sg-sample-02-k0y-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:05:31.731470+00:00",
+      "finishedAt": "2026-10-12T02:05:33.531788+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0x",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0x:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "04-sg-sample-03-k0x-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:05:33.532257+00:00",
+      "finishedAt": "2026-10-12T02:05:35.312110+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0y",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0y:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "04-sg-sample-03-k0y-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:05:46.737787+00:00",
+      "finishedAt": "2026-10-12T02:05:48.571788+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0x",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0x:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "04-sg-sample-04-k0x-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:05:48.572677+00:00",
+      "finishedAt": "2026-10-12T02:05:50.290942+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0y",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0y:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "04-sg-sample-04-k0y-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:06:01.737087+00:00",
+      "finishedAt": "2026-10-12T02:06:03.485439+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0x",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0x:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "04-sg-sample-05-k0x-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:06:03.485892+00:00",
+      "finishedAt": "2026-10-12T02:06:05.216031+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0y",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0y:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "04-sg-sample-05-k0y-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:06:16.732144+00:00",
+      "finishedAt": "2026-10-12T02:06:18.531688+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0x",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0x:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "04-sg-sample-06-k0x-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:06:18.532279+00:00",
+      "finishedAt": "2026-10-12T02:06:20.222003+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0y",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0y:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "04-sg-sample-06-k0y-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:06:31.736871+00:00",
+      "finishedAt": "2026-10-12T02:06:33.529006+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0x",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0x:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "04-sg-sample-07-k0x-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:06:33.529456+00:00",
+      "finishedAt": "2026-10-12T02:06:35.243552+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0y",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0y:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "04-sg-sample-07-k0y-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:06:46.729839+00:00",
+      "finishedAt": "2026-10-12T02:06:48.493522+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0x",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0x:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "04-sg-sample-08-k0x-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:06:48.494046+00:00",
+      "finishedAt": "2026-10-12T02:06:50.196099+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0y",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0y:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "04-sg-sample-08-k0y-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:06:50.244244+00:00",
+      "finishedAt": "2026-10-12T02:06:54.765457+00:00",
+      "command": [
+        "./scripts/lab.sh",
+        "assert-dr",
+        "k0y"
+      ],
+      "log": "05-sg-end-traffic-replication-and-acl-assertions.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:06:54.766289+00:00",
+      "finishedAt": "2026-10-12T02:06:56.489425+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0x",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0x:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "mm2-offset-syncs.sg.internal",
+        "--time",
+        "-1"
+      ],
+      "log": "06-sg-to-hk-offset-sync-topic-end.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:06:56.490354+00:00",
+      "finishedAt": "2026-10-12T02:06:58.761265+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0x",
+        "/opt/kafka/bin/kafka-console-consumer.sh",
+        "--bootstrap-server",
+        "k0x:19092",
+        "--consumer.config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "mm2-offset-syncs.sg.internal",
+        "--partition",
+        "0",
+        "--offset",
+        "493",
+        "--max-messages",
+        "5",
+        "--timeout-ms",
+        "10000",
+        "--formatter",
+        "org.apache.kafka.connect.mirror.formatters.OffsetSyncFormatter"
+      ],
+      "log": "06-sg-to-hk-offset-syncs.log",
+      "exitCode": 0
+    },
+    {
+      "operation": "promote",
+      "target": "k0x",
+      "startedAt": "2026-10-12T02:06:58.761849+00:00",
+      "finishedAt": "2026-10-12T02:07:07.185491+00:00",
+      "elapsedSeconds": 8.424,
+      "evidence": "07-hk-promotion.json"
+    },
+    {
+      "startedAt": "2026-10-12T02:07:07.204934+00:00",
+      "finishedAt": "2026-10-12T02:07:42.694702+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "up",
+        "-d",
+        "--no-deps",
+        "--no-build",
+        "--force-recreate",
+        "--wait",
+        "--wait-timeout",
+        "120",
+        "synthetic-producer",
+        "synthetic-consumer"
+      ],
+      "log": "08-hk-client-restart.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:07:44.793835+00:00",
+      "finishedAt": "2026-10-12T02:07:49.552699+00:00",
+      "command": [
+        "./scripts/lab.sh",
+        "assert-dr",
+        "k0x"
+      ],
+      "log": "09-hk-traffic-replication-and-acl-assertions.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:07:49.590442+00:00",
+      "finishedAt": "2026-10-12T02:07:51.261497+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0x",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0x:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "10-final-hk-k0x-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:07:51.262121+00:00",
+      "finishedAt": "2026-10-12T02:07:53.057775+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0y",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0y:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "appTopic",
+        "--time",
+        "-1"
+      ],
+      "log": "10-final-hk-k0y-end-offsets.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:07:53.100090+00:00",
+      "finishedAt": "2026-10-12T02:07:54.828268+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0y",
+        "/opt/kafka/bin/kafka-get-offsets.sh",
+        "--bootstrap-server",
+        "k0y:19092",
+        "--command-config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "mm2-offset-syncs.hk.internal",
+        "--time",
+        "-1"
+      ],
+      "log": "11-hk-to-sg-offset-sync-topic-end.log",
+      "exitCode": 0
+    },
+    {
+      "startedAt": "2026-10-12T02:07:54.828910+00:00",
+      "finishedAt": "2026-10-12T02:07:57.169678+00:00",
+      "command": [
+        "docker",
+        "compose",
+        "exec",
+        "-T",
+        "k0y",
+        "/opt/kafka/bin/kafka-console-consumer.sh",
+        "--bootstrap-server",
+        "k0y:19092",
+        "--consumer.config",
+        "/opt/lab/client.properties",
+        "--topic",
+        "mm2-offset-syncs.hk.internal",
+        "--partition",
+        "0",
+        "--offset",
+        "8756",
+        "--max-messages",
+        "5",
+        "--timeout-ms",
+        "10000",
+        "--formatter",
+        "org.apache.kafka.connect.mirror.formatters.OffsetSyncFormatter"
+      ],
+      "log": "11-hk-to-sg-offset-syncs.log",
+      "exitCode": 0
+    }
+  ],
+  "samples": [
+    {
+      "at": "2026-10-12T02:04:46.689316+00:00",
+      "elapsedSeconds": 3.839,
+      "evidence": "04-sg-sample-00.json",
+      "producerCount": 55,
+      "consumerCount": 55,
+      "producerSequence": 82807,
+      "producerErrors": 0,
+      "consumerErrors": 0,
+      "logEnds": {
+        "k0x": {
+          "appTopic:0": 82742
+        },
+        "k0y": {
+          "appTopic:0": 82760
+        }
+      }
+    },
+    {
+      "at": "2026-10-12T02:05:01.689130+00:00",
+      "elapsedSeconds": 18.595,
+      "evidence": "04-sg-sample-01.json",
+      "producerCount": 200,
+      "consumerCount": 200,
+      "producerSequence": 82952,
+      "producerErrors": 0,
+      "consumerErrors": 0,
+      "logEnds": {
+        "k0x": {
+          "appTopic:0": 82886
+        },
+        "k0y": {
+          "appTopic:0": 82902
+        }
+      }
+    },
+    {
+      "at": "2026-10-12T02:05:16.689127+00:00",
+      "elapsedSeconds": 33.617,
+      "evidence": "04-sg-sample-02.json",
+      "producerCount": 345,
+      "consumerCount": 345,
+      "producerSequence": 83097,
+      "producerErrors": 0,
+      "consumerErrors": 0,
+      "logEnds": {
+        "k0x": {
+          "appTopic:0": 83031
+        },
+        "k0y": {
+          "appTopic:0": 83048
+        }
+      }
+    },
+    {
+      "at": "2026-10-12T02:05:31.689132+00:00",
+      "elapsedSeconds": 48.669,
+      "evidence": "04-sg-sample-03.json",
+      "producerCount": 491,
+      "consumerCount": 491,
+      "producerSequence": 83243,
+      "producerErrors": 0,
+      "consumerErrors": 0,
+      "logEnds": {
+        "k0x": {
+          "appTopic:0": 83177
+        },
+        "k0y": {
+          "appTopic:0": 83194
+        }
+      }
+    },
+    {
+      "at": "2026-10-12T02:05:46.689137+00:00",
+      "elapsedSeconds": 63.658,
+      "evidence": "04-sg-sample-04.json",
+      "producerCount": 637,
+      "consumerCount": 637,
+      "producerSequence": 83389,
+      "producerErrors": 0,
+      "consumerErrors": 0,
+      "logEnds": {
+        "k0x": {
+          "appTopic:0": 83323
+        },
+        "k0y": {
+          "appTopic:0": 83340
+        }
+      }
+    },
+    {
+      "at": "2026-10-12T02:06:01.689145+00:00",
+      "elapsedSeconds": 78.571,
+      "evidence": "04-sg-sample-05.json",
+      "producerCount": 782,
+      "consumerCount": 782,
+      "producerSequence": 83534,
+      "producerErrors": 0,
+      "consumerErrors": 0,
+      "logEnds": {
+        "k0x": {
+          "appTopic:0": 83468
+        },
+        "k0y": {
+          "appTopic:0": 83485
+        }
+      }
+    },
+    {
+      "at": "2026-10-12T02:06:16.689125+00:00",
+      "elapsedSeconds": 93.578,
+      "evidence": "04-sg-sample-06.json",
+      "producerCount": 928,
+      "consumerCount": 928,
+      "producerSequence": 83680,
+      "producerErrors": 0,
+      "consumerErrors": 0,
+      "logEnds": {
+        "k0x": {
+          "appTopic:0": 83614
+        },
+        "k0y": {
+          "appTopic:0": 83631
+        }
+      }
+    },
+    {
+      "at": "2026-10-12T02:06:31.689157+00:00",
+      "elapsedSeconds": 108.596,
+      "evidence": "04-sg-sample-07.json",
+      "producerCount": 1074,
+      "consumerCount": 1074,
+      "producerSequence": 83826,
+      "producerErrors": 0,
+      "consumerErrors": 0,
+      "logEnds": {
+        "k0x": {
+          "appTopic:0": 83761
+        },
+        "k0y": {
+          "appTopic:0": 83777
+        }
+      }
+    },
+    {
+      "at": "2026-10-12T02:06:46.689129+00:00",
+      "elapsedSeconds": 123.555,
+      "evidence": "04-sg-sample-08.json",
+      "producerCount": 1221,
+      "consumerCount": 1221,
+      "producerSequence": 83973,
+      "producerErrors": 0,
+      "consumerErrors": 0,
+      "logEnds": {
+        "k0x": {
+          "appTopic:0": 83907
+        },
+        "k0y": {
+          "appTopic:0": 83923
+        }
+      }
+    }
+  ],
+  "checks": {
+    "twoMinuteSGTraffic": true,
+    "SGSampleErrorsZero": true,
+    "SGReverseConnectorsRunning": true,
+    "failoverToSG": true,
+    "failbackToHK": true,
+    "actualStandbyReadWriteDeniedBothDirections": true,
+    "oldForwardConnectorsRemovedBothDirections": true,
+    "recentEventsReplicatedBothDirections": true,
+    "schemaIdsAndDefinitionsMatchBothSites": true,
+    "finalClientsOnHKZeroErrors": true,
+    "boundedRecordAuditNoMissingOrStoredDuplicates": true
+  },
+  "errors": [],
+  "sgWindowStartedAt": "2026-10-12T02:04:46.689017+00:00",
+  "sgWindowFinishedAt": "2026-10-12T02:06:50.244228+00:00",
+  "sgWindowElapsedSeconds": 123.555,
+  "final": {
+    "at": "2026-10-12T02:07:49.553179+00:00",
+    "primary": "k0x",
+    "apps": {
+      "producer": {
+        "clusterId": "MkU3OEVBNTcwNTJENDM2Qk",
+        "bootstrap": "k0x:9092",
+        "lastId": "8ddf111b-ab5e-4012-a690-2d76b8f72f48",
+        "role": "producer",
+        "enabled": true,
+        "seqNo": 84161,
+        "lastError": "",
+        "errors": 0,
+        "idle": false,
+        "count": 54,
+        "schemaRegistryUrl": "http://schema-registry-k0x:8081",
+        "registeredSchemas": {
+          "appTopic-lab.events.OrderCreated": 1,
+          "appTopic-lab.events.PaymentReceived": 2,
+          "appTopic-lab.events.ShipmentDispatched": 3,
+          "appTopic-lab.events.InventoryUpdated": 4,
+          "appTopic-lab.events.CustomerUpdated": 5
+        }
+      },
+      "consumer": {
+        "seqNo": 0,
+        "lastError": "",
+        "errors": 0,
+        "idle": false,
+        "count": 54,
+        "clusterId": "MkU3OEVBNTcwNTJENDM2Qk",
+        "bootstrap": "k0x:9092",
+        "lastId": "8ddf111b-ab5e-4012-a690-2d76b8f72f48",
+        "role": "consumer",
+        "enabled": true,
+        "schemaRegistryUrl": "http://schema-registry-k0x:8081",
+        "registeredSchemas": {}
+      }
+    },
+    "logEnds": {
+      "k0x": {
+        "appTopic:0": 84076
+      },
+      "k0y": {
+        "appTopic:0": 84093
+      }
+    }
+  },
+  "finishedAt": "2026-10-12T02:07:57.170278+00:00",
+  "postRunAudit": {
+    "result": "audit-summary.json",
+    "auditedAt": "2026-10-12T02:21:49.072507323Z",
+    "auditedEventsPerSite": 1431,
+    "consumerProcessingAudit": "No per-event processing ledger; not directly proven"
+  }
+}

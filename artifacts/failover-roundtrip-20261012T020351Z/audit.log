@@ -1,0 +1,45 @@
+SLF4J(W): No SLF4J providers were found.
+SLF4J(W): Defaulting to no-operation (NOP) logger implementation
+SLF4J(W): See https://www.slf4j.org/codes.html#noProviders for further details.
+{
+  "auditedAt" : "2026-10-12T02:21:49.072507323Z",
+  "pass" : true,
+  "baselineExcludedEventId" : "34535dcd-56fb-492d-b0a2-58a7de315a7d",
+  "finalIncludedEventId" : "8ddf111b-ab5e-4012-a690-2d76b8f72f48",
+  "auditedEvents" : 1431,
+  "sgAuditedEvents" : 1431,
+  "hkScannedPrefixEnd" : 84076,
+  "sgScannedPrefixEnd" : 84093,
+  "hkAuditedOffsetStart" : 82632,
+  "hkAuditedOffsetEndExclusive" : 84063,
+  "acknowledgementReconciliation" : [ {
+    "phase" : "HK before SG promotion",
+    "records" : 40,
+    "acknowledged" : 40
+  }, {
+    "phase" : "SG primary",
+    "records" : 1337,
+    "acknowledged" : 1337
+  }, {
+    "phase" : "HK after failback",
+    "records" : 54,
+    "acknowledged" : 54
+  } ],
+  "missingFromHK" : [ ],
+  "missingFromSG" : [ ],
+  "payloadMismatches" : [ ],
+  "timestampOrHeaderMismatches" : [ ],
+  "duplicateEventIdsHK" : { },
+  "duplicateEventIdsSG" : { },
+  "duplicateSequenceNumbersHK" : { },
+  "sequenceGaps" : [ {
+    "count" : 18,
+    "last" : 82752,
+    "first" : 82735
+  }, {
+    "count" : 18,
+    "last" : 84107,
+    "first" : 84090
+  } ],
+  "consumerProcessingAudit" : "No per-event processing ledger was retained. SG consumer count equals its 1337 unique topic records; this supports, but does not directly prove, absence of repeated processing."
+}

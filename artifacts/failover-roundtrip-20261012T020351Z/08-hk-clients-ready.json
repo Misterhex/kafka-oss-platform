@@ -1,0 +1,36 @@
+{
+  "producer": {
+    "clusterId": "MkU3OEVBNTcwNTJENDM2Qk",
+    "bootstrap": "k0x:9092",
+    "lastId": "7fe8e85d-f3f5-4a7b-ab9e-b0179e201ceb",
+    "role": "producer",
+    "enabled": true,
+    "seqNo": 84116,
+    "lastError": "",
+    "errors": 0,
+    "idle": false,
+    "count": 9,
+    "schemaRegistryUrl": "http://schema-registry-k0x:8081",
+    "registeredSchemas": {
+      "appTopic-lab.events.OrderCreated": 1,
+      "appTopic-lab.events.PaymentReceived": 2,
+      "appTopic-lab.events.ShipmentDispatched": 3,
+      "appTopic-lab.events.InventoryUpdated": 4,
+      "appTopic-lab.events.CustomerUpdated": 5
+    }
+  },
+  "consumer": {
+    "seqNo": 0,
+    "lastError": "",
+    "errors": 0,
+    "idle": false,
+    "count": 9,
+    "clusterId": "MkU3OEVBNTcwNTJENDM2Qk",
+    "bootstrap": "k0x:9092",
+    "lastId": "7fe8e85d-f3f5-4a7b-ab9e-b0179e201ceb",
+    "role": "consumer",
+    "enabled": true,
+    "schemaRegistryUrl": "http://schema-registry-k0x:8081",
+    "registeredSchemas": {}
+  }
+}

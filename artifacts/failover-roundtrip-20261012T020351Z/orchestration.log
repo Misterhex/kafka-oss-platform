@@ -1,0 +1,14 @@
+OUTPUT_DIRECTORY=/workspace/kafka-oss-platform/artifacts/failover-roundtrip-20261012T020351Z
+SG promoted; retargeting clients
+SG two-minute observation window started
+{"at": "2026-10-12T02:04:46.689316+00:00", "elapsedSeconds": 3.839, "evidence": "04-sg-sample-00.json", "producerCount": 55, "consumerCount": 55, "producerSequence": 82807, "producerErrors": 0, "consumerErrors": 0, "logEnds": {"k0x": {"appTopic:0": 82742}, "k0y": {"appTopic:0": 82760}}}
+{"at": "2026-10-12T02:05:01.689130+00:00", "elapsedSeconds": 18.595, "evidence": "04-sg-sample-01.json", "producerCount": 200, "consumerCount": 200, "producerSequence": 82952, "producerErrors": 0, "consumerErrors": 0, "logEnds": {"k0x": {"appTopic:0": 82886}, "k0y": {"appTopic:0": 82902}}}
+{"at": "2026-10-12T02:05:16.689127+00:00", "elapsedSeconds": 33.617, "evidence": "04-sg-sample-02.json", "producerCount": 345, "consumerCount": 345, "producerSequence": 83097, "producerErrors": 0, "consumerErrors": 0, "logEnds": {"k0x": {"appTopic:0": 83031}, "k0y": {"appTopic:0": 83048}}}
+{"at": "2026-10-12T02:05:31.689132+00:00", "elapsedSeconds": 48.669, "evidence": "04-sg-sample-03.json", "producerCount": 491, "consumerCount": 491, "producerSequence": 83243, "producerErrors": 0, "consumerErrors": 0, "logEnds": {"k0x": {"appTopic:0": 83177}, "k0y": {"appTopic:0": 83194}}}
+{"at": "2026-10-12T02:05:46.689137+00:00", "elapsedSeconds": 63.658, "evidence": "04-sg-sample-04.json", "producerCount": 637, "consumerCount": 637, "producerSequence": 83389, "producerErrors": 0, "consumerErrors": 0, "logEnds": {"k0x": {"appTopic:0": 83323}, "k0y": {"appTopic:0": 83340}}}
+{"at": "2026-10-12T02:06:01.689145+00:00", "elapsedSeconds": 78.571, "evidence": "04-sg-sample-05.json", "producerCount": 782, "consumerCount": 782, "producerSequence": 83534, "producerErrors": 0, "consumerErrors": 0, "logEnds": {"k0x": {"appTopic:0": 83468}, "k0y": {"appTopic:0": 83485}}}
+{"at": "2026-10-12T02:06:16.689125+00:00", "elapsedSeconds": 93.578, "evidence": "04-sg-sample-06.json", "producerCount": 928, "consumerCount": 928, "producerSequence": 83680, "producerErrors": 0, "consumerErrors": 0, "logEnds": {"k0x": {"appTopic:0": 83614}, "k0y": {"appTopic:0": 83631}}}
+{"at": "2026-10-12T02:06:31.689157+00:00", "elapsedSeconds": 108.596, "evidence": "04-sg-sample-07.json", "producerCount": 1074, "consumerCount": 1074, "producerSequence": 83826, "producerErrors": 0, "consumerErrors": 0, "logEnds": {"k0x": {"appTopic:0": 83761}, "k0y": {"appTopic:0": 83777}}}
+{"at": "2026-10-12T02:06:46.689129+00:00", "elapsedSeconds": 123.555, "evidence": "04-sg-sample-08.json", "producerCount": 1221, "consumerCount": 1221, "producerSequence": 83973, "producerErrors": 0, "consumerErrors": 0, "logEnds": {"k0x": {"appTopic:0": 83907}, "k0y": {"appTopic:0": 83923}}}
+HK promoted; retargeting clients
+ROUNDTRIP_PASSED

@@ -40,3 +40,18 @@ experiment must be restored with original IDs before serving mirrored events.
   primary, stage, saved boundaries or reverse status.
 
 The controller remains deliberately sequential and does not retry failed stages.
+
+## Recorded round-trip evidence (2026-10-12)
+
+The HK → SG → HK run includes a two-minute SG traffic window and a post-run
+record audit:
+
+- [Observations and report](artifacts/failover-roundtrip-20261012T020351Z/REPORT.md)
+- [Record audit summary](artifacts/failover-roundtrip-20261012T020351Z/audit-summary.json)
+- [Complete evidence and logs ZIP](artifacts/failover-roundtrip-20261012T020351Z.zip)
+
+The audit matched 1,431 records on each site, with no missing or duplicate stored
+event IDs and matching payloads. Producer acknowledged-send counts reconciled in
+every phase. Consumer per-event processing was not logged, so the report does not
+claim a formal exactly-once processing guarantee. The evidence manifest includes
+SHA-256 checksums; generated artifacts from other runs remain ignored.

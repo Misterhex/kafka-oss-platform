@@ -1,0 +1,40 @@
+Picked up JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=2 -XX:TieredStopAtLevel=1
+SLF4J(W): No SLF4J providers were found.
+SLF4J(W): Defaulting to no-operation (NOP) logger implementation
+SLF4J(W): See https://www.slf4j.org/codes.html#noProviders for further details.
+{
+  "producer" : {
+    "clusterId" : "MkU3OEVBNTcwNTJENDM2Qk",
+    "bootstrap" : "k0x:9092",
+    "lastId" : "ccc55797-d909-44f0-a9e6-72bf63e35f51",
+    "role" : "producer",
+    "enabled" : true,
+    "seqNo" : 84133,
+    "lastError" : "",
+    "errors" : 0,
+    "idle" : false,
+    "count" : 26,
+    "schemaRegistryUrl" : "http://schema-registry-k0x:8081",
+    "registeredSchemas" : {
+      "appTopic-lab.events.OrderCreated" : 1,
+      "appTopic-lab.events.PaymentReceived" : 2,
+      "appTopic-lab.events.ShipmentDispatched" : 3,
+      "appTopic-lab.events.InventoryUpdated" : 4,
+      "appTopic-lab.events.CustomerUpdated" : 5
+    }
+  },
+  "consumer" : {
+    "seqNo" : 0,
+    "lastError" : "",
+    "errors" : 0,
+    "idle" : false,
+    "count" : 26,
+    "clusterId" : "MkU3OEVBNTcwNTJENDM2Qk",
+    "bootstrap" : "k0x:9092",
+    "lastId" : "ccc55797-d909-44f0-a9e6-72bf63e35f51",
+    "role" : "consumer",
+    "enabled" : true,
+    "schemaRegistryUrl" : "http://schema-registry-k0x:8081",
+    "registeredSchemas" : { }
+  }
+}

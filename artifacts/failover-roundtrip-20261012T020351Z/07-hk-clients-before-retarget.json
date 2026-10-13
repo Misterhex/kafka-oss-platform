@@ -1,0 +1,36 @@
+{
+  "producer": {
+    "lastError": "java.util.concurrent.ExecutionException: org.apache.kafka.common.errors.TopicAuthorizationException: Not authorized to access topics: [appTopic]",
+    "seqNo": 84105,
+    "enabled": true,
+    "role": "producer",
+    "lastId": "9d04c70c-a140-4e08-aca1-d20bbea20215",
+    "bootstrap": "k0y:9092",
+    "clusterId": "NDU2N0FCQ0RFRjEyMzQ1Ng",
+    "count": 1337,
+    "idle": false,
+    "errors": 16,
+    "schemaRegistryUrl": "http://schema-registry-k0y:8081",
+    "registeredSchemas": {
+      "appTopic-lab.events.OrderCreated": 1,
+      "appTopic-lab.events.PaymentReceived": 2,
+      "appTopic-lab.events.ShipmentDispatched": 3,
+      "appTopic-lab.events.InventoryUpdated": 4,
+      "appTopic-lab.events.CustomerUpdated": 5
+    }
+  },
+  "consumer": {
+    "enabled": true,
+    "role": "consumer",
+    "lastId": "9d04c70c-a140-4e08-aca1-d20bbea20215",
+    "bootstrap": "k0y:9092",
+    "clusterId": "NDU2N0FCQ0RFRjEyMzQ1Ng",
+    "count": 1337,
+    "idle": false,
+    "errors": 16,
+    "lastError": "org.apache.kafka.common.errors.TopicAuthorizationException: Not authorized to access topics: [appTopic]",
+    "seqNo": 0,
+    "schemaRegistryUrl": "http://schema-registry-k0y:8081",
+    "registeredSchemas": {}
+  }
+}

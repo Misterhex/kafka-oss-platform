@@ -1,0 +1,285 @@
+{
+  "at": "2026-10-12T02:05:16.689127+00:00",
+  "status": {
+    "checkpoint": {
+      "barriers": {
+        "0": "0521674a-fe71-480c-96e5-52c14277929d"
+      },
+      "capturedAt": "2026-10-12T02:05:14.203285592Z",
+      "committedIds": {
+        "0": "0521674a-fe71-480c-96e5-52c14277929d"
+      },
+      "sourceOffsets": {
+        "0": 82993
+      }
+    },
+    "checkpointFrozen": true,
+    "error": "",
+    "forced": false,
+    "phase": "SG_ACTIVE",
+    "primary": "k0y",
+    "restoredOffsets": {
+      "0": 82672
+    },
+    "reverseStatus": "RUNNING",
+    "schemas": {
+      "eyJrZXl0eXBlIjoiU0NIRU1BIiwic3ViamVjdCI6ImFwcFRvcGljLWxhYi5ldmVudHMuQ3VzdG9tZXJVcGRhdGVkIiwidmVyc2lvbiI6MSwibWFnaWMiOjF9": "eyJzdWJqZWN0IjoiYXBwVG9waWMtbGFiLmV2ZW50cy5DdXN0b21lclVwZGF0ZWQiLCJ2ZXJzaW9uIjoxLCJpZCI6NSwic2NoZW1hVHlwZSI6IkFWUk8iLCJzY2hlbWEiOiJ7XCJ0eXBlXCI6XCJyZWNvcmRcIixcIm5hbWVcIjpcIkN1c3RvbWVyVXBkYXRlZFwiLFwibmFtZXNwYWNlXCI6XCJsYWIuZXZlbnRzXCIsXCJmaWVsZHNcIjpbe1wibmFtZVwiOlwiaWRcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJzZXFOb1wiLFwidHlwZVwiOlwibG9uZ1wifSx7XCJuYW1lXCI6XCJjcmVhdGVkQXRcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJldmVudFR5cGVcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJjdXN0b21lcklkXCIsXCJ0eXBlXCI6XCJzdHJpbmdcIn1dfSIsImRlbGV0ZWQiOmZhbHNlfQ==",
+      "eyJrZXl0eXBlIjoiU0NIRU1BIiwic3ViamVjdCI6ImFwcFRvcGljLWxhYi5ldmVudHMuSW52ZW50b3J5VXBkYXRlZCIsInZlcnNpb24iOjEsIm1hZ2ljIjoxfQ==": "eyJzdWJqZWN0IjoiYXBwVG9waWMtbGFiLmV2ZW50cy5JbnZlbnRvcnlVcGRhdGVkIiwidmVyc2lvbiI6MSwiaWQiOjQsInNjaGVtYVR5cGUiOiJBVlJPIiwic2NoZW1hIjoie1widHlwZVwiOlwicmVjb3JkXCIsXCJuYW1lXCI6XCJJbnZlbnRvcnlVcGRhdGVkXCIsXCJuYW1lc3BhY2VcIjpcImxhYi5ldmVudHNcIixcImZpZWxkc1wiOlt7XCJuYW1lXCI6XCJpZFwiLFwidHlwZVwiOlwic3RyaW5nXCJ9LHtcIm5hbWVcIjpcInNlcU5vXCIsXCJ0eXBlXCI6XCJsb25nXCJ9LHtcIm5hbWVcIjpcImNyZWF0ZWRBdFwiLFwidHlwZVwiOlwic3RyaW5nXCJ9LHtcIm5hbWVcIjpcImV2ZW50VHlwZVwiLFwidHlwZVwiOlwic3RyaW5nXCJ9LHtcIm5hbWVcIjpcInNrdVwiLFwidHlwZVwiOlwic3RyaW5nXCJ9XX0iLCJkZWxldGVkIjpmYWxzZX0=",
+      "eyJrZXl0eXBlIjoiU0NIRU1BIiwic3ViamVjdCI6ImFwcFRvcGljLWxhYi5ldmVudHMuT3JkZXJDcmVhdGVkIiwidmVyc2lvbiI6MSwibWFnaWMiOjF9": "eyJzdWJqZWN0IjoiYXBwVG9waWMtbGFiLmV2ZW50cy5PcmRlckNyZWF0ZWQiLCJ2ZXJzaW9uIjoxLCJpZCI6MSwic2NoZW1hVHlwZSI6IkFWUk8iLCJzY2hlbWEiOiJ7XCJ0eXBlXCI6XCJyZWNvcmRcIixcIm5hbWVcIjpcIk9yZGVyQ3JlYXRlZFwiLFwibmFtZXNwYWNlXCI6XCJsYWIuZXZlbnRzXCIsXCJmaWVsZHNcIjpbe1wibmFtZVwiOlwiaWRcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJzZXFOb1wiLFwidHlwZVwiOlwibG9uZ1wifSx7XCJuYW1lXCI6XCJjcmVhdGVkQXRcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJldmVudFR5cGVcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJvcmRlcklkXCIsXCJ0eXBlXCI6XCJzdHJpbmdcIn1dfSIsImRlbGV0ZWQiOmZhbHNlfQ==",
+      "eyJrZXl0eXBlIjoiU0NIRU1BIiwic3ViamVjdCI6ImFwcFRvcGljLWxhYi5ldmVudHMuU2hpcG1lbnREaXNwYXRjaGVkIiwidmVyc2lvbiI6MSwibWFnaWMiOjF9": "eyJzdWJqZWN0IjoiYXBwVG9waWMtbGFiLmV2ZW50cy5TaGlwbWVudERpc3BhdGNoZWQiLCJ2ZXJzaW9uIjoxLCJpZCI6Mywic2NoZW1hVHlwZSI6IkFWUk8iLCJzY2hlbWEiOiJ7XCJ0eXBlXCI6XCJyZWNvcmRcIixcIm5hbWVcIjpcIlNoaXBtZW50RGlzcGF0Y2hlZFwiLFwibmFtZXNwYWNlXCI6XCJsYWIuZXZlbnRzXCIsXCJmaWVsZHNcIjpbe1wibmFtZVwiOlwiaWRcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJzZXFOb1wiLFwidHlwZVwiOlwibG9uZ1wifSx7XCJuYW1lXCI6XCJjcmVhdGVkQXRcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJldmVudFR5cGVcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJzaGlwbWVudElkXCIsXCJ0eXBlXCI6XCJzdHJpbmdcIn1dfSIsImRlbGV0ZWQiOmZhbHNlfQ==",
+      "eyJrZXl0eXBlIjoiU0NIRU1BIiwic3ViamVjdCI6ImFwcFRvcGljLWxhYi5ldmVudHMuUGF5bWVudFJlY2VpdmVkIiwidmVyc2lvbiI6MSwibWFnaWMiOjF9": "eyJzdWJqZWN0IjoiYXBwVG9waWMtbGFiLmV2ZW50cy5QYXltZW50UmVjZWl2ZWQiLCJ2ZXJzaW9uIjoxLCJpZCI6Miwic2NoZW1hVHlwZSI6IkFWUk8iLCJzY2hlbWEiOiJ7XCJ0eXBlXCI6XCJyZWNvcmRcIixcIm5hbWVcIjpcIlBheW1lbnRSZWNlaXZlZFwiLFwibmFtZXNwYWNlXCI6XCJsYWIuZXZlbnRzXCIsXCJmaWVsZHNcIjpbe1wibmFtZVwiOlwiaWRcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJzZXFOb1wiLFwidHlwZVwiOlwibG9uZ1wifSx7XCJuYW1lXCI6XCJjcmVhdGVkQXRcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJldmVudFR5cGVcIixcInR5cGVcIjpcInN0cmluZ1wifSx7XCJuYW1lXCI6XCJwYXltZW50SWRcIixcInR5cGVcIjpcInN0cmluZ1wifV19IiwiZGVsZXRlZCI6ZmFsc2V9"
+    },
+    "skipped": [],
+    "sourceEnds": {
+      "_schemas:0": 22,
+      "appTopic:0": 82672
+    },
+    "sourceReachable": true,
+    "target": "k0y",
+    "targetEnds": {
+      "_schemas:0": 30,
+      "appTopic:0": 82672
+    }
+  },
+  "apps": {
+    "producer": {
+      "lastError": "",
+      "seqNo": 83097,
+      "enabled": true,
+      "role": "producer",
+      "lastId": "c73e3890-e3bd-447b-aa7c-de750f27f763",
+      "bootstrap": "k0y:9092",
+      "clusterId": "NDU2N0FCQ0RFRjEyMzQ1Ng",
+      "count": 345,
+      "idle": false,
+      "errors": 0,
+      "schemaRegistryUrl": "http://schema-registry-k0y:8081",
+      "registeredSchemas": {
+        "appTopic-lab.events.OrderCreated": 1,
+        "appTopic-lab.events.PaymentReceived": 2,
+        "appTopic-lab.events.ShipmentDispatched": 3,
+        "appTopic-lab.events.InventoryUpdated": 4,
+        "appTopic-lab.events.CustomerUpdated": 5
+      }
+    },
+    "consumer": {
+      "enabled": true,
+      "role": "consumer",
+      "lastId": "c73e3890-e3bd-447b-aa7c-de750f27f763",
+      "bootstrap": "k0y:9092",
+      "clusterId": "NDU2N0FCQ0RFRjEyMzQ1Ng",
+      "count": 345,
+      "idle": false,
+      "errors": 0,
+      "lastError": "",
+      "seqNo": 0,
+      "schemaRegistryUrl": "http://schema-registry-k0y:8081",
+      "registeredSchemas": {}
+    }
+  },
+  "connectors": {
+    "k0x": {
+      "sg-to-hk": {
+        "status": {
+          "name": "sg-to-hk",
+          "connector": {
+            "state": "RUNNING",
+            "worker_id": "connect-k0x:8083",
+            "version": "4.1.1"
+          },
+          "tasks": [
+            {
+              "id": 0,
+              "state": "RUNNING",
+              "worker_id": "connect-k0x:8083",
+              "version": "4.1.1"
+            }
+          ],
+          "type": "source"
+        },
+        "offsets": {
+          "offsets": [
+            {
+              "partition": {
+                "cluster": "sg",
+                "partition": 0,
+                "topic": "_schemas"
+              },
+              "offset": {
+                "offset": 29
+              }
+            },
+            {
+              "partition": {
+                "cluster": "sg",
+                "partition": 0,
+                "topic": "appTopic"
+              },
+              "offset": {
+                "offset": 83010
+              }
+            }
+          ]
+        }
+      },
+      "sg-to-hk-checkpoints": {
+        "status": {
+          "name": "sg-to-hk-checkpoints",
+          "connector": {
+            "state": "RUNNING",
+            "worker_id": "connect-k0x:8083",
+            "version": "4.1.1"
+          },
+          "tasks": [
+            {
+              "id": 0,
+              "state": "RUNNING",
+              "worker_id": "connect-k0x:8083",
+              "version": "4.1.1"
+            }
+          ],
+          "type": "source"
+        },
+        "offsets": {
+          "offsets": [
+            {
+              "partition": {
+                "partition": 0,
+                "topic": "appTopic",
+                "group": "dr-consumer"
+              },
+              "offset": {
+                "offset": 0
+              }
+            }
+          ]
+        }
+      }
+    },
+    "k0y": {}
+  },
+  "logEnds": {
+    "k0x": {
+      "appTopic:0": 83031
+    },
+    "k0y": {
+      "appTopic:0": 83048
+    }
+  },
+  "registries": {
+    "k0x": {
+      "mode": {
+        "mode": "READONLY"
+      },
+      "subjects": [
+        {
+          "subject": "appTopic-lab.events.CustomerUpdated",
+          "version": 1,
+          "id": 5,
+          "guid": "5d540e1c-a4a8-bf04-48fd-c65e5763bed6",
+          "schemaType": "AVRO",
+          "schema": "{\"type\":\"record\",\"name\":\"CustomerUpdated\",\"namespace\":\"lab.events\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"seqNo\",\"type\":\"long\"},{\"name\":\"createdAt\",\"type\":\"string\"},{\"name\":\"eventType\",\"type\":\"string\"},{\"name\":\"customerId\",\"type\":\"string\"}]}",
+          "ts": 1791761414414,
+          "deleted": false
+        },
+        {
+          "subject": "appTopic-lab.events.InventoryUpdated",
+          "version": 1,
+          "id": 4,
+          "guid": "9a917153-0a80-f91a-2100-acc23f7efcd6",
+          "schemaType": "AVRO",
+          "schema": "{\"type\":\"record\",\"name\":\"InventoryUpdated\",\"namespace\":\"lab.events\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"seqNo\",\"type\":\"long\"},{\"name\":\"createdAt\",\"type\":\"string\"},{\"name\":\"eventType\",\"type\":\"string\"},{\"name\":\"sku\",\"type\":\"string\"}]}",
+          "ts": 1791761414400,
+          "deleted": false
+        },
+        {
+          "subject": "appTopic-lab.events.OrderCreated",
+          "version": 1,
+          "id": 1,
+          "guid": "c235b071-b550-9ddc-0ad8-ed822496923f",
+          "schemaType": "AVRO",
+          "schema": "{\"type\":\"record\",\"name\":\"OrderCreated\",\"namespace\":\"lab.events\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"seqNo\",\"type\":\"long\"},{\"name\":\"createdAt\",\"type\":\"string\"},{\"name\":\"eventType\",\"type\":\"string\"},{\"name\":\"orderId\",\"type\":\"string\"}]}",
+          "ts": 1791761414300,
+          "deleted": false
+        },
+        {
+          "subject": "appTopic-lab.events.PaymentReceived",
+          "version": 1,
+          "id": 2,
+          "guid": "c2d21219-6da2-df8e-16b4-06d3621fe42c",
+          "schemaType": "AVRO",
+          "schema": "{\"type\":\"record\",\"name\":\"PaymentReceived\",\"namespace\":\"lab.events\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"seqNo\",\"type\":\"long\"},{\"name\":\"createdAt\",\"type\":\"string\"},{\"name\":\"eventType\",\"type\":\"string\"},{\"name\":\"paymentId\",\"type\":\"string\"}]}",
+          "ts": 1791761414371,
+          "deleted": false
+        },
+        {
+          "subject": "appTopic-lab.events.ShipmentDispatched",
+          "version": 1,
+          "id": 3,
+          "guid": "8f6746c0-c532-475b-2bdc-226eed79b01c",
+          "schemaType": "AVRO",
+          "schema": "{\"type\":\"record\",\"name\":\"ShipmentDispatched\",\"namespace\":\"lab.events\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"seqNo\",\"type\":\"long\"},{\"name\":\"createdAt\",\"type\":\"string\"},{\"name\":\"eventType\",\"type\":\"string\"},{\"name\":\"shipmentId\",\"type\":\"string\"}]}",
+          "ts": 1791761414387,
+          "deleted": false
+        }
+      ]
+    },
+    "k0y": {
+      "mode": {
+        "mode": "READWRITE"
+      },
+      "subjects": [
+        {
+          "subject": "appTopic-lab.events.CustomerUpdated",
+          "version": 1,
+          "id": 5,
+          "guid": "5d540e1c-a4a8-bf04-48fd-c65e5763bed6",
+          "schemaType": "AVRO",
+          "schema": "{\"type\":\"record\",\"name\":\"CustomerUpdated\",\"namespace\":\"lab.events\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"seqNo\",\"type\":\"long\"},{\"name\":\"createdAt\",\"type\":\"string\"},{\"name\":\"eventType\",\"type\":\"string\"},{\"name\":\"customerId\",\"type\":\"string\"}]}",
+          "ts": 1791761414414,
+          "deleted": false
+        },
+        {
+          "subject": "appTopic-lab.events.InventoryUpdated",
+          "version": 1,
+          "id": 4,
+          "guid": "9a917153-0a80-f91a-2100-acc23f7efcd6",
+          "schemaType": "AVRO",
+          "schema": "{\"type\":\"record\",\"name\":\"InventoryUpdated\",\"namespace\":\"lab.events\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"seqNo\",\"type\":\"long\"},{\"name\":\"createdAt\",\"type\":\"string\"},{\"name\":\"eventType\",\"type\":\"string\"},{\"name\":\"sku\",\"type\":\"string\"}]}",
+          "ts": 1791761414400,
+          "deleted": false
+        },
+        {
+          "subject": "appTopic-lab.events.OrderCreated",
+          "version": 1,
+          "id": 1,
+          "guid": "c235b071-b550-9ddc-0ad8-ed822496923f",
+          "schemaType": "AVRO",
+          "schema": "{\"type\":\"record\",\"name\":\"OrderCreated\",\"namespace\":\"lab.events\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"seqNo\",\"type\":\"long\"},{\"name\":\"createdAt\",\"type\":\"string\"},{\"name\":\"eventType\",\"type\":\"string\"},{\"name\":\"orderId\",\"type\":\"string\"}]}",
+          "ts": 1791761414300,
+          "deleted": false
+        },
+        {
+          "subject": "appTopic-lab.events.PaymentReceived",
+          "version": 1,
+          "id": 2,
+          "guid": "c2d21219-6da2-df8e-16b4-06d3621fe42c",
+          "schemaType": "AVRO",
+          "schema": "{\"type\":\"record\",\"name\":\"PaymentReceived\",\"namespace\":\"lab.events\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"seqNo\",\"type\":\"long\"},{\"name\":\"createdAt\",\"type\":\"string\"},{\"name\":\"eventType\",\"type\":\"string\"},{\"name\":\"paymentId\",\"type\":\"string\"}]}",
+          "ts": 1791761414371,
+          "deleted": false
+        },
+        {
+          "subject": "appTopic-lab.events.ShipmentDispatched",
+          "version": 1,
+          "id": 3,
+          "guid": "8f6746c0-c532-475b-2bdc-226eed79b01c",
+          "schemaType": "AVRO",
+          "schema": "{\"type\":\"record\",\"name\":\"ShipmentDispatched\",\"namespace\":\"lab.events\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"seqNo\",\"type\":\"long\"},{\"name\":\"createdAt\",\"type\":\"string\"},{\"name\":\"eventType\",\"type\":\"string\"},{\"name\":\"shipmentId\",\"type\":\"string\"}]}",
+          "ts": 1791761414387,
+          "deleted": false
+        }
+      ]
+    }
+  }
+}

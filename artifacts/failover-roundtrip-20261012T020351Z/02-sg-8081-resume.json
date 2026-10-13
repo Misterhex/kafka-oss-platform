@@ -1,0 +1,14 @@
+{
+  "lastError": "",
+  "seqNo": 82752,
+  "enabled": true,
+  "role": "producer",
+  "lastId": "",
+  "bootstrap": "k0y:9092",
+  "clusterId": "",
+  "count": 0,
+  "idle": true,
+  "errors": 0,
+  "schemaRegistryUrl": "http://schema-registry-k0y:8081",
+  "registeredSchemas": {}
+}

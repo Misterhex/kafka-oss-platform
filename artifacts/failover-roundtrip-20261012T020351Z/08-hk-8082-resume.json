@@ -1,0 +1,14 @@
+{
+  "seqNo": 0,
+  "lastError": "",
+  "errors": 0,
+  "idle": true,
+  "count": 0,
+  "clusterId": "",
+  "bootstrap": "k0x:9092",
+  "lastId": "",
+  "role": "consumer",
+  "enabled": true,
+  "schemaRegistryUrl": "http://schema-registry-k0x:8081",
+  "registeredSchemas": {}
+}
