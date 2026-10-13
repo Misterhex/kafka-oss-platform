@@ -3,7 +3,8 @@
 `mvn verify` checks stage order in both directions, blocks flip after a sync failure,
 rejects invalid targets, verifies reverse next-offset conversion (including empty
 partitions), and confirms ACL fences affect application identities only. Existing
-checkpoint tests cover identity-based offset translation and drain barriers.
+tests cover drain barriers, raw offsets across multiple consumer groups/partitions,
+state-file persistence, and loading legacy state without translated offsets.
 
 `./scripts/test-dr.sh` executes actual SG promotion followed by HK promotion. The test
 harness explicitly restarts/resumes application clients after each promotion; the
@@ -13,17 +14,29 @@ standby DENY ACLs, actual rejected application reads/writes, removed forward
 connectors and running reverse replication.
 
 Unplanned promotion uses the same stages. Stop the old site in the lab (an external
-fence), wait for surviving checkpoints, then invoke promotion with `force=true` and
+fence), then invoke promotion with `force=true` and
 `sourceFenced=true`. Missing external-fence assertion must block promotion. An
-unreachable source skips its fresh boundary capture/drain and uses the destination's
-MM2 checkpoints. Old-site reverse setup remains pending. No workflow retries are
+unreachable source skips its fresh boundary/group capture and drain. The controller
+does not translate or write destination consumer-group offsets. Old-site reverse setup remains pending. No workflow retries are
 implemented; failures preserve diagnostic status for an external orchestrator.
 
 Schema backup remains a raw-topic tool and does not change registry modes. The
 controller separately manages registry modes as part of promotion. The earlier ID-swap
 experiment must be restored with original IDs before serving mirrored events.
 
-## Executed against the managed lab
+## Current raw source-state capture
+
+The drain stage saves the source cluster, UTC capture time, replicated-topic LEOs,
+and raw committed offsets for every consumer group in `/state/state.json`.
+`sourceGroupOffsets` keys include both topic and partition. Empty groups are recorded
+with empty offset maps. No consumer offset translation or destination offset writes
+remain in the controller. Reverse MirrorSource offset seeding is unchanged.
+
+The current unit tests cover multiple groups/partitions, state persistence and legacy
+state migration. Destination consumer recovery is now outside the controller; previous
+consumer continuity results below apply to the earlier translation-enabled version.
+
+## Historical checks against the managed lab
 
 - HK → SG and SG → HK promotions completed with both clients processing and zero
   client errors after the application-team restart.

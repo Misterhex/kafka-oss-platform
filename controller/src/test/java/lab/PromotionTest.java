@@ -46,21 +46,6 @@ class PromotionTest {
     ((com.fasterxml.jackson.databind.node.ObjectNode) actual.path("offsets").get(0).path("offset")).put("offset", 120);
     assertFalse(DrApplication.offsetsMatch(actual, expected));
   }
-  @Test void decodesActualMirrorCheckpointWireLayout() throws Exception {
-    var keyBytes = new java.io.ByteArrayOutputStream();
-    try (var key = new java.io.DataOutputStream(keyBytes)) {
-      key.writeUTF("dr-consumer"); key.writeUTF("appTopic"); key.writeInt(0);
-    }
-    var valueBytes = new java.io.ByteArrayOutputStream();
-    try (var value = new java.io.DataOutputStream(valueBytes)) {
-      value.writeShort(0); value.writeLong(900); value.writeLong(120); value.writeUTF("");
-    }
-    var checkpoint = DrApplication.decodeCheckpoint(keyBytes.toByteArray(), valueBytes.toByteArray());
-    assertEquals("dr-consumer", checkpoint.group()); assertEquals("appTopic", checkpoint.topic());
-    assertEquals(0, checkpoint.partition()); assertEquals(120, checkpoint.downstream());
-    byte[] unsupported = valueBytes.toByteArray(); unsupported[1] = 1;
-    assertThrows(IllegalStateException.class, () -> DrApplication.decodeCheckpoint(keyBytes.toByteArray(), unsupported));
-  }
   @Test void refusesExpiredOrRecreatedSourceBoundaries() {
     assertDoesNotThrow(() -> DrApplication.validateBoundary(120, 120, 130));
     assertDoesNotThrow(() -> DrApplication.validateBoundary(0, 0, 0));

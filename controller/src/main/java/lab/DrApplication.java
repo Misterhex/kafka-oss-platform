@@ -3,8 +3,6 @@ package lab;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.net.http.*;
-import java.nio.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.*;
 import java.util.*;
@@ -29,10 +27,12 @@ public class DrApplication {
   private State state;
   private boolean force, externallyFenced;
 
+  @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
   public static class State {
     public String phase = "NEW", primary = "k0x", error = "", target = "", reverseStatus = "NOT_STARTED";
     public Checkpoint checkpoint = new Checkpoint();
-    public Map<Integer, Long> restoredOffsets = new TreeMap<>();
+    public String sourceCluster = "", sourceCapturedAt = "";
+    public Map<String, Map<String, Long>> sourceGroupOffsets = new TreeMap<>();
     public Map<String, Long> sourceEnds = new TreeMap<>(), targetEnds = new TreeMap<>();
     public Map<String, String> schemas = new TreeMap<>();
     public List<String> skipped = new ArrayList<>();
@@ -143,20 +143,40 @@ public class DrApplication {
 
   private Checkpoint capture(String site) throws Exception {
     var cp = new Checkpoint(); cp.capturedAt = Instant.now().toString();
-    try (var admin = KafkaSupport.admin(bootstrap(site)); var c = KafkaSupport.reader(bootstrap(site))) {
-      var commits = admin.listConsumerGroupOffsets(KafkaSupport.GROUP).partitionsToOffsetAndMetadata().get(15, TimeUnit.SECONDS);
+    try (var c = KafkaSupport.reader(bootstrap(site))) {
       var ps = partitions(site).stream().filter(p -> p.topic().equals(KafkaSupport.TOPIC)).toList();
       var ends = c.endOffsets(ps); var beginnings = c.beginningOffsets(ps);
       for (var p : ps) {
-        long offset = commits.getOrDefault(p, new OffsetAndMetadata(beginnings.get(p))).offset();
-        cp.sourceOffsets.put(p.partition(), offset);
-        if (offset > beginnings.get(p)) cp.committedIds.put(p.partition(), readKey(c, p, offset - 1));
-        else if (offset > 0 && offset < beginnings.get(p)) throw new IllegalStateException("Checkpoint expired from retention");
         if (ends.get(p) > beginnings.get(p)) cp.barriers.put(p.partition(), readKey(c, p, ends.get(p) - 1));
       }
     }
     return cp;
   }
+  /** Raw committed offsets for every source group; never translated or applied to another cluster. */
+  static Map<String, Map<String, Long>> captureGroupOffsets(Admin admin) throws Exception {
+    Map<String, Map<String, Long>> groups = new TreeMap<>();
+    for (var group : admin.listConsumerGroups().all().get(15, TimeUnit.SECONDS)) {
+      Map<String, Long> offsets = new TreeMap<>();
+      admin.listConsumerGroupOffsets(group.groupId()).partitionsToOffsetAndMetadata()
+          .get(15, TimeUnit.SECONDS).forEach((p, o) -> {
+            if (o != null) offsets.put(partitionKey(p), o.offset());
+          });
+      groups.put(group.groupId(), offsets);
+    }
+    return groups;
+  }
+
+  private void recordSourceState(String source, Map<String, Long> topicEnds) throws Exception {
+    try (var admin = KafkaSupport.admin(bootstrap(source))) {
+      var groups = captureGroupOffsets(admin);
+      state.sourceCluster = source;
+      state.sourceCapturedAt = Instant.now().toString();
+      state.sourceEnds = new TreeMap<>(topicEnds);
+      state.sourceGroupOffsets = groups;
+    }
+    save();
+  }
+
   private String readKey(KafkaConsumer<String, byte[]> c, TopicPartition p, long offset) {
     c.assign(List.of(p)); c.seek(p, offset);
     long deadline = System.nanoTime() + Duration.ofSeconds(10).toNanos();
@@ -228,7 +248,7 @@ public class DrApplication {
     state.sourceReachable = true;
     registry(source).request("PUT", "/mode", Map.of("mode", "READONLY"));
     // ACL revocation is not a graceful application flush. Allow accepted requests and final commits to settle.
-    state.sourceEnds = stableEnds(source);
+    recordSourceState(source, stableEnds(source));
     state.checkpoint = capture(source); state.checkpointFrozen = true;
     state.schemas = schemaState(source); save();
   }
@@ -246,10 +266,6 @@ public class DrApplication {
     }
     stopForward(source, target);
     state.targetEnds = ends(target); save();
-    var targetRecords = KafkaSupport.scan(bootstrap(target));
-    state.restoredOffsets = state.sourceReachable
-        ? Checkpoint.translate(state.checkpoint, targetRecords, true)
-        : checkpointOffsets(source, target);
     if (!state.schemas.equals(schemaState(target))) throw new IllegalStateException("Schema IDs/definitions differ from the last source snapshot; restore the original schema backup before promotion");
     // Verify the running registry has loaded the retained mappings, not merely that Kafka has them.
     for (var value : state.schemas.values()) {
@@ -259,11 +275,6 @@ public class DrApplication {
       var actual = registry(target).request("GET", "/schemas/ids/" + id, null);
       if (!actual.path("schema").asText().equals(record.path("schema").asText()))
         throw new IllegalStateException("Target registry schema cache mismatch for ID " + id);
-    }
-    try (var admin = KafkaSupport.admin(bootstrap(target))) {
-      Map<TopicPartition, OffsetAndMetadata> offsets = new HashMap<>();
-      state.restoredOffsets.forEach((p, o) -> offsets.put(new TopicPartition(KafkaSupport.TOPIC, p), new OffsetAndMetadata(o)));
-      admin.alterConsumerGroupOffsets(KafkaSupport.GROUP, offsets).all().get(20, TimeUnit.SECONDS);
     }
     save();
   }
@@ -331,50 +342,6 @@ public class DrApplication {
     return a.equals(b);
   }
 
-  /** Read periodic MM2 checkpoints from the surviving destination when the source is unavailable. */
-  private Map<Integer, Long> checkpointOffsets(String source, String target) throws Exception {
-    String topic = alias(source) + ".checkpoints.internal";
-    var properties = KafkaSupport.properties(bootstrap(target));
-    properties.put("key.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
-    properties.put("value.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
-    properties.put("enable.auto.commit", "false");
-    Map<Integer, Long> offsets = new TreeMap<>();
-    try (var admin = KafkaSupport.admin(bootstrap(target))) {
-      if (!admin.listTopics().names().get(15, TimeUnit.SECONDS).contains(topic)) throw new IllegalStateException("No surviving MirrorCheckpoint topic; consumer restart position requires operator recovery");
-    }
-    try (var c = new KafkaConsumer<byte[], byte[]>(properties)) {
-      var p = new TopicPartition(topic, 0); c.assign(List.of(p)); c.seekToBeginning(List.of(p));
-      long end = c.endOffsets(List.of(p)).get(p), deadline = System.nanoTime() + Duration.ofSeconds(20).toNanos();
-      while (c.position(p) < end) {
-        if (System.nanoTime() > deadline) throw new IllegalStateException("Checkpoint scan timed out");
-        for (var record : c.poll(Duration.ofMillis(200))) if (record.offset() < end && record.value() != null) {
-          var cp = decodeCheckpoint(record.key(), record.value());
-          if (cp.group().equals(KafkaSupport.GROUP) && cp.topic().equals(KafkaSupport.TOPIC))
-            offsets.put(cp.partition(), cp.downstream());
-        }
-      }
-    }
-    for (var p : partitions(target)) if (p.topic().equals(KafkaSupport.TOPIC)) {
-      Long offset = offsets.get(p.partition());
-      if (offset == null || offset < 0 || offset > state.targetEnds.get(partitionKey(p)))
-        throw new IllegalStateException("Missing or invalid translated consumer checkpoint for " + p);
-      try (var c = KafkaSupport.reader(bootstrap(target))) {
-        if (offset < c.beginningOffsets(List.of(p)).get(p)) throw new IllegalStateException("Checkpoint expired from retention");
-      }
-    }
-    return offsets;
-  }
-  record TranslatedCheckpoint(String group, String topic, int partition, long downstream) {}
-  static TranslatedCheckpoint decodeCheckpoint(byte[] key, byte[] value) {
-    // Kafka 4.1.1 Checkpoint.KEY_SCHEMA has no version header; only VALUE has one.
-    var k = ByteBuffer.wrap(key); var v = ByteBuffer.wrap(value);
-    if (v.getShort() != 0) throw new IllegalStateException("Unknown MirrorCheckpoint format");
-    String group = string(k), topic = string(k); int partition = k.getInt();
-    v.getLong(); long downstream = v.getLong(); string(v);
-    return new TranslatedCheckpoint(group, topic, partition, downstream);
-  }
-  private static String string(ByteBuffer b) { int length = Short.toUnsignedInt(b.getShort()); byte[] value = new byte[length]; b.get(value); return new String(value, StandardCharsets.UTF_8); }
-
   @PostMapping("/api/promote")
   public synchronized State promote(@RequestParam String target,
       @RequestParam(defaultValue = "false") boolean force,
@@ -383,6 +350,7 @@ public class DrApplication {
     Promotion.validate(state.primary, target);
     this.force = force; this.externallyFenced = sourceFenced;
     state.target = target; state.forced = force; state.skipped.clear(); state.error = "";
+    state.sourceCluster = state.primary; state.sourceCapturedAt = ""; state.sourceGroupOffsets.clear();
     state.sourceEnds.clear(); state.targetEnds.clear(); state.reverseStatus = "NOT_STARTED";
     try {
       Promotion.promote(state.primary, target, new Promotion.Stages() {
@@ -421,11 +389,18 @@ public class DrApplication {
   @Scheduled(fixedDelay = 3000)
   public synchronized void checkpoint() {
     if (!Set.of("HK_ACTIVE", "SG_ACTIVE").contains(state.phase)) return;
-    try { state.checkpoint = capture(state.primary); state.schemas = schemaState(state.primary); save(); }
+    try {
+      state.checkpoint = capture(state.primary); state.schemas = schemaState(state.primary);
+      if (state.error.startsWith("Checkpoint:")) state.error = "";
+      save();
+    }
     catch (Exception e) { state.error = "Checkpoint: " + e; }
   }
   @PostMapping("/api/checkpoint") public synchronized State manualCheckpoint() throws Exception {
-    state.checkpoint = capture(state.primary); state.schemas = schemaState(state.primary); save(); return state;
+    recordSourceState(state.primary, ends(state.primary));
+    state.checkpoint = capture(state.primary); state.schemas = schemaState(state.primary);
+    if (state.error.startsWith("Checkpoint:")) state.error = "";
+    save(); return state;
   }
   @GetMapping("/api/status") public synchronized State status() { return state; }
   @GetMapping("/api/apps") public Map<String, Object> appStatus() throws Exception {

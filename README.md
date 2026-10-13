@@ -38,13 +38,14 @@ application pause/resume call in promotion. Temporal can wrap these stages later
 
 1. **Drain:** fence application principals on both sites. Set the source registry
    READONLY, allow accepted writes to settle, and capture source topic boundaries,
-   consumer commits and schema state. ACL fencing is not a graceful application flush;
+   raw committed offsets for every source consumer group and schema state.
+   ACL fencing is not a graceful application flush;
    uncommitted processing may replay.
 2. **Sync:** wait for final source event IDs and schema state on the destination.
    Stop and delete both forward MirrorSource and MirrorCheckpoint connectors on the
    destination worker. Save destination log-end offsets for `appTopic` and `_schemas`
-   before enabling writes. Verify schema IDs in the running registry, translate
-   committed consumer positions and install destination group offsets.
+   before enabling writes. Verify schema IDs in the running registry. Consumer-group
+   offsets are neither translated nor applied to the destination.
 3. **Flip:** set the destination registry READWRITE and grant application ACLs there.
    Keep the old site fenced. Set up reverse replication on the old site's Connect
    worker from the saved destination offsets. If the old site is unavailable, report
@@ -68,8 +69,9 @@ curl --fail-with-body --max-time 300 -X POST \
   'http://localhost:8080/api/promote?target=k0y&force=true&sourceFenced=true'
 ```
 
-The controller requires surviving MM2 consumer checkpoints and its last source schema
-snapshot. Missing, expired or invalid checkpoints and schema mismatches block promotion.
+The controller requires its last source schema snapshot to match the destination.
+Schema mismatches block promotion. MM2 checkpoints remain available for application
+recovery, but the controller does not read or apply their consumer offsets.
 `sourceFenced=true` is an operator assertion, not proof that an unreachable broker was
 fenced. A network partition alone does not satisfy it. Status records skipped steps.
 Reachable sources always undergo the full drain, even with `force=true`.
@@ -102,9 +104,20 @@ mvn verify                 # Java 21 + Maven; live integration tests opt in
 ./scripts/test-dr.sh        # promotes SG and HK; restarts lab clients explicitly
 ```
 
-The DR controller's event-ID offset translation scans retained `appTopic` records;
-it is intended for this one-partition synthetic lab. SG's reverse boundary is a
-**next offset**; MirrorSource stored offsets are last-processed offsets, so setup
+The controller uses final event IDs only to verify replication has drained; it does
+not translate consumer offsets. This scan is intended for the one-partition synthetic
+lab. The source snapshot is saved atomically in `/state/state.json` with `sourceCluster`,
+`sourceCapturedAt`, `sourceEnds` (topic LEOs), and `sourceGroupOffsets` (group →
+`topic:partition` → raw committed next offset). `targetEnds` separately stores the
+destination's reverse-replication boundaries. `/api/checkpoint` can capture the active
+site's current state without a promotion; only the drain capture is fenced/stable.
+
+Destination consumer commits remain unchanged. Applications must choose their own
+restart position, using existing commits or an explicit recovery procedure. Existing
+commits can replay records already processed on the former primary; a new group uses
+its configured reset policy.
+
+SG's reverse boundary is a **next offset**; MirrorSource stored offsets are last-processed offsets, so setup
 installs `next - 1` (null for an empty partition) while the connector is STOPPED,
 then resumes it. It checks that the saved boundaries remain within retained source
 offsets and verifies the installed offsets first. Expired boundaries require a
