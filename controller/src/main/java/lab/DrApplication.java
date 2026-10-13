@@ -346,7 +346,6 @@ public class DrApplication {
   public synchronized State promote(@RequestParam String target,
       @RequestParam(defaultValue = "false") boolean force,
       @RequestParam(defaultValue = "false") boolean sourceFenced) throws Exception {
-    if (!Set.of("HK_ACTIVE", "SG_ACTIVE").contains(state.phase)) throw new IllegalStateException("Bootstrap first, or inspect the failed stage; this controller has no automatic retries");
     Promotion.validate(state.primary, target);
     this.force = force; this.externallyFenced = sourceFenced;
     state.target = target; state.forced = force; state.skipped.clear(); state.error = "";
@@ -364,15 +363,12 @@ public class DrApplication {
 
   @PostMapping("/api/reverse")
   public synchronized State reverse() throws Exception {
-    if (!Set.of("HK_ACTIVE", "SG_ACTIVE").contains(state.phase) || !state.reverseStatus.equals("PENDING"))
-      throw new IllegalStateException("Reverse replication is not pending");
     startReverse(other(state.primary), state.primary);
     state.reverseStatus = "RUNNING"; state.error = ""; save(); return state;
   }
 
   @PostMapping("/api/bootstrap")
   public synchronized State bootstrapLab() throws Exception {
-    if (!Set.of("NEW", "HK_ACTIVE").contains(state.phase)) throw new IllegalStateException("Bootstrap only initializes HK primary");
     PlatformAccess.fence(bootstrap("k0y"));
     for (String site : List.of("k0x", "k0y")) { KafkaSupport.ensureTopic(bootstrap(site)); compactSchemaTopic(site); }
     // Refuse an opposing direction; never silently create an identity-policy replication loop.

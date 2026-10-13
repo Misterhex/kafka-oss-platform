@@ -35,6 +35,11 @@ are loopback-only. This is a lab configuration, not production credential manage
 `flip`. The REST entry point is `POST /api/promote?target=k0y` (SG) or `target=k0x`
 (HK). There is no retry engine, resumable workflow, automatic client restart, or
 application pause/resume call in promotion. Temporal can wrap these stages later.
+Saved phase and reverse-status labels are diagnostic only: they do not gate promotion,
+bootstrap, or explicit reverse setup. Each promotion starts at drain and stops on the
+first failure. Safety checks still verify fencing, replication and offset boundaries.
+The background checkpoint sampler runs only while a site is marked active, so it does
+not overwrite a failed promotion's captured evidence.
 
 1. **Drain:** fence application principals on both sites. Set the source registry
    READONLY, allow accepted writes to settle, and capture source topic boundaries,
